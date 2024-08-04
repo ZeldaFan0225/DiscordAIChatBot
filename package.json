@@ -1,0 +1,23 @@
+{
+  "name": "bot_base",
+  "version": "1.2.1",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "deploy": "npx tsc -p DiscordBotBase && node ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ZeldaFan0225/DiscordBotBase.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@thunder04/supermap": "^3.0.2",
+    "discord.js": "^14.15.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.1.0",
+    "typescript": "^5.5.4"
+  }
+}
