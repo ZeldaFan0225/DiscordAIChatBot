@@ -53,9 +53,23 @@ export class ConfigLoader {
 
 export interface Config {
     staff_roles: string[];
+    hey: HeyConfiguration;
     systemInstructions: Record<string, string>;
     connectorConfigurations: Record<string, ConnectorConfiguration>;
     modelConfigurations: Record<string, ModelConfiguration>
+}
+
+export interface HeyConfiguration {
+    enabled: boolean;
+    triggers: HeyTrigger[];
+}
+
+export interface HeyTrigger {
+    trigger: string;
+    model: string;
+    processingEmoji?: string;
+    systemInstruction?: string;
+    previousMessagesContext?: number;
 }
 
 export interface ConnectorConfiguration {
@@ -68,5 +82,8 @@ export interface ModelConfiguration {
     model: string;
     displayName: string;
     defaultSystemInstructionName: string;
+    images: {
+        supported: boolean;
+    };
     generationOptions: GenerationOptions;
 }

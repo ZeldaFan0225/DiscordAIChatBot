@@ -59,7 +59,7 @@ export default class OpenAIConnector extends BaseConnector {
 
         const response = await result.json();
 
-        if(response.error) throw new Error(response.error.message || response.error);
+        if(response.error) throw new Error("OpenAI Error", {cause: response});
 
         return response as OpenAiCompatibleResponse;
     }
@@ -74,8 +74,8 @@ export default class OpenAIConnector extends BaseConnector {
         }
         if(message.role === ChatMessageRoles.USER) {
             if(message.attachments) {
-                const imageUrls: {type: "image", image_url: {url: string}}[] = message.attachments.map(url => ({
-                    type: "image" as const,
+                const imageUrls: {type: "image_url", image_url: {url: string}}[] = message.attachments.map(url => ({
+                    type: "image_url" as const,
                     image_url: {
                         url
                     }
@@ -142,7 +142,7 @@ interface OpenAiUserMessage extends OpenAiBaseMessage {
     content: string | ({
         type: "text", text: string
     } | {
-        type: "image", image_url: {url: string, detail?: "auto" | "low" | "high"}
+        type: "image_url", image_url: {url: string, detail?: "auto" | "low" | "high"}
     })[]
 }
 

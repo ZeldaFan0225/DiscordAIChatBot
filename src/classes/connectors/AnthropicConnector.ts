@@ -2,6 +2,7 @@ import BaseConnector, {ChatMessage, ChatMessageRoles, GenerationOptions} from ".
 
 export default class AnthropicConnector extends BaseConnector {
     async requestChatCompletion(messages: ChatMessage[], generationOptions: GenerationOptions): Promise<ChatMessage> {
+        console.info(`AnthropicConnector: Requesting chat completion with messages: `, messages);
         const sytemInstruction = messages.find(m => m.role === ChatMessageRoles.SYSTEM)?.content;
         const req = await fetch(this.connectionOptions.url, {
             method: "POST",

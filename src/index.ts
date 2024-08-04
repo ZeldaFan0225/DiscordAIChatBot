@@ -6,6 +6,7 @@ import { handleModals } from "./handlers/modalHandler";
 import { handleAutocomplete } from "./handlers/autocompleteHandler";
 import { handleContexts } from "./handlers/contextHandler";
 import {ActivityType, ApplicationCommandType, InteractionType, PresenceUpdateStatus} from "discord.js";
+import handleMessage from "./handlers/message";
 
 const RE_INI_KEY_VAL = /^\s*([\w.-]+)\s*=\s*(.*)?\s*$/
 for (const line of readFileSync(`${process.cwd()}/.env`, 'utf8').split(/[\r\n]/)) {
@@ -16,7 +17,7 @@ for (const line of readFileSync(`${process.cwd()}/.env`, 'utf8').split(/[\r\n]/)
 }
 
 const client = new DiscordBotClient({
-    intents: ["Guilds"]
+    intents: ["Guilds", "MessageContent", "GuildMessages"]
 })
 
 
@@ -57,3 +58,5 @@ client.on("interactionCreate", async (interaction) => {
         };
     }
 })
+
+client.on("messageCreate", async (message) => await handleMessage(message, client))
