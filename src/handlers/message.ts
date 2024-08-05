@@ -52,7 +52,12 @@ async function handleHey(message: Message, client: DiscordBotClient) {
         attachments: message.attachments.filter(a => a.contentType?.includes("image")).map(i => i.url)
     });
 
-    const completion = await connector.requestChatCompletion(messages, modelConfig.generationOptions);
+    const completion = await connector.requestChatCompletion(messages, modelConfig.generationOptions).catch(console.error);
+    if(!completion) {
+        await message.reactions.removeAll();
+        console.error("Failed to get completion");
+        return;
+    }
     console.info("Completion: ", completion);
 
     await message.reactions.removeAll();
