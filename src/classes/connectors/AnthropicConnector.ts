@@ -1,7 +1,7 @@
-import BaseConnector, {ChatMessage, ChatMessageRoles, GenerationOptions} from "./BaseConnector";
+import BaseConnector, {ChatCompletionResult, ChatMessage, ChatMessageRoles, GenerationOptions} from "./BaseConnector";
 
 export default class AnthropicConnector extends BaseConnector {
-    async requestChatCompletion(messages: ChatMessage[], generationOptions: GenerationOptions): Promise<ChatMessage> {
+    async requestChatCompletion(messages: ChatMessage[], generationOptions: GenerationOptions): Promise<ChatCompletionResult> {
         console.info(`AnthropicConnector: Requesting chat completion with messages: `, messages);
         const sytemInstruction = messages.find(m => m.role === ChatMessageRoles.SYSTEM)?.content;
         const req = await fetch(this.connectionOptions.url, {
@@ -25,8 +25,10 @@ export default class AnthropicConnector extends BaseConnector {
         }
 
         return {
-            role: ChatMessageRoles.ASSISTANT,
-            content: data.content[0].text
+            resultMessage: {
+                role: ChatMessageRoles.ASSISTANT,
+                content: data.content[0].text
+            }
         };
     }
 

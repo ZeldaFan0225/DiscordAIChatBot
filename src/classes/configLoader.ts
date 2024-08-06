@@ -61,11 +61,10 @@ export interface Config {
 
 export interface HeyConfiguration {
     enabled: boolean;
-    triggers: HeyTrigger[];
+    triggers: Record<string, HeyTrigger>;
 }
 
 export interface HeyTrigger {
-    trigger: string;
     model: string;
     processingEmoji?: string;
     systemInstruction?: string;

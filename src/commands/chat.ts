@@ -63,7 +63,7 @@ export default class extends Command {
         ).catch(console.error);
 
         if(!completion) return await ctx.error({error: "Failed to get completion"});
-        await ctx.interaction.editReply(completion.content)
+        await ctx.interaction.editReply(completion.resultMessage.content)
     }
 
     override async autocomplete(context: AutocompleteContext): Promise<any> {

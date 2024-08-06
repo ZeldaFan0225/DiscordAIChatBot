@@ -1,7 +1,7 @@
-import BaseConnector, {ChatMessage, GenerationOptions} from "./BaseConnector";
+import BaseConnector, {ChatCompletionResult, ChatMessage, GenerationOptions} from "./BaseConnector";
 
 export default class TogetherAIConnector extends BaseConnector {
-    override async requestChatCompletion(messages: ChatMessage[], generationOptions: GenerationOptions): Promise<ChatMessage> {
+    override async requestChatCompletion(messages: ChatMessage[], generationOptions: GenerationOptions): Promise<ChatCompletionResult> {
         // convert message format to openai format
         const openAiMessages = messages
             .map(m => this.convertToOpenAiMessage(m))
@@ -15,7 +15,9 @@ export default class TogetherAIConnector extends BaseConnector {
         const result = response.choices[0]?.message;
         if(!result) throw new Error("Failed to get response from OpenAI", {cause: response});
 
-        return result;
+        return {
+            resultMessage: result
+        };
     }
 
     private async sendRequest(payload: TogetherAIPayload): Promise<TogetherAIResponse> {

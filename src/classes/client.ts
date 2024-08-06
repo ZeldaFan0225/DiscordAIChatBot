@@ -3,6 +3,7 @@ import { Client, ClientOptions } from "discord.js";
 import { Store } from "../stores/store";
 import { StoreTypes } from "../types";
 import { ConfigLoader } from "./configLoader";
+import { Pool } from "pg";
 
 export class DiscordBotClient extends Client {
 	commands: Store<StoreTypes.COMMANDS>;
@@ -11,6 +12,7 @@ export class DiscordBotClient extends Client {
 	modals: Store<StoreTypes.MODALS>;
 	cache: SuperMap<string, any>;
 	#configLoader = ConfigLoader;
+	static db: Pool;
 
 	constructor(options: ClientOptions) {
 		super(options);

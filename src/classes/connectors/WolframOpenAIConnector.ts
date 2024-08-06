@@ -1,7 +1,7 @@
-import BaseConnector, {ChatMessage, ChatMessageRoles, GenerationOptions} from "./BaseConnector";
+import BaseConnector, {ChatCompletionResult, ChatMessage, ChatMessageRoles, GenerationOptions} from "./BaseConnector";
 
 export default class OpenAIConnector extends BaseConnector {
-    override async requestChatCompletion(messages: ChatMessage[], generationOptions: GenerationOptions): Promise<ChatMessage> {
+    override async requestChatCompletion(messages: ChatMessage[], generationOptions: GenerationOptions): Promise<ChatCompletionResult> {
         // convert message format to openai format
         const openAiMessages = messages
             .map(m => this.convertToOpenAiMessage(m))
@@ -13,7 +13,9 @@ export default class OpenAIConnector extends BaseConnector {
 
         const response = await this.executeToolCall(openAiMessages, generationOptions)
 
-        return response;
+        return {
+            resultMessage: response
+        };
     }
 
     private async executeToolCall(messages: OpenAiChatMessage[], generationOptions: GenerationOptions, depth = 5): Promise<OpenAiBotMessage> {

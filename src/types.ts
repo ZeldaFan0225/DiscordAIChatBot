@@ -69,3 +69,13 @@ export interface ModalContextInitOptions extends BaseContextInitOptions {
 export interface AutocompleteContextInitOptions extends BaseContextInitOptions {
     interaction: AutocompleteInteraction
 }
+
+export interface MessageData {
+    index: number,
+    message_id: string,
+    trigger_name: string,
+    user_content: string,
+    assistant_content: string,
+    parent_message_id: string,
+    user_id: string,
+}
