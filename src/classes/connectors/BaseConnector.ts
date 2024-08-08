@@ -35,6 +35,6 @@ export interface ChatMessage {
     content: string;
     /** The name of the user who sent the message */
     name?: string;
-    /** The attachments to be included as a url */
+    /** The attachments to be included as a fetchable https url */
     attachments?: string[];
 }
