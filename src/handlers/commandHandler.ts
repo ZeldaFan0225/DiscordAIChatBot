@@ -6,11 +6,6 @@ export async function handleCommands(interaction: ChatInputCommandInteraction, c
     const command = await client.commands.getCommand(interaction).catch(() => null)
     if(!command) return;
     const context = new CommandContext({interaction, client})
-    if(!interaction.inGuild())
-        return await context.error({
-            error: "You can only use commands in guilds",
-            ephemeral: true
-        })
     if(!interaction.channel)
         return await context.error({
             error: "Please add me to the private thread (by mentioning me) to use commands",

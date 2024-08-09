@@ -10,11 +10,6 @@ export async function handleContexts(interaction: UserContextMenuCommandInteract
     if(interaction.commandType === ApplicationCommandType.User) context = new ContextContext<ApplicationCommandType.User>({interaction, client})
     else context = new ContextContext<ApplicationCommandType.Message>({interaction, client})
 
-    if(!interaction.inGuild())
-        return await context.error({
-            error: "You can only use commands in guilds",
-            ephemeral: true
-        })
     if(!interaction.channel)
         return await context.error({
             error: "Please add me to the private thread (by mentioning me) to use commands",

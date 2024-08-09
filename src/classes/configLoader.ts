@@ -54,6 +54,9 @@ export class ConfigLoader {
 export interface Config {
     staff_roles: string[];
     hey: HeyConfiguration;
+    chat: {
+        maxHistoryDepth?: number;
+    }
     systemInstructions: Record<string, string>;
     connectorConfigurations: Record<string, ConnectorConfiguration>;
     modelConfigurations: Record<string, ModelConfiguration>

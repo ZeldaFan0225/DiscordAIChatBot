@@ -70,10 +70,21 @@ export interface AutocompleteContextInitOptions extends BaseContextInitOptions {
     interaction: AutocompleteInteraction
 }
 
-export interface MessageData {
+export interface HeyMessageData {
     index: number,
     message_id: string,
     trigger_name: string,
+    user_content: string,
+    assistant_content: string,
+    parent_message_id: string,
+    user_id: string,
+}
+
+export interface ChatMessageData {
+    index: number,
+    message_id: string,
+    model_name: string,
+    system_instruction_name: string,
     user_content: string,
     assistant_content: string,
     parent_message_id: string,

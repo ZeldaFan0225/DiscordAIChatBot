@@ -1,13 +1,24 @@
-import { SlashCommandBuilder } from "discord.js";
 import { Command } from "../classes/command";
 import { CommandContext } from "../classes/commandContext";
 import { AutocompleteContext } from "../classes/autocompleteContext";
+import { SlashCommandBuilder } from "@discordjs/builders";
+import { ApplicationIntegrationType, AttachmentBuilder, InteractionContextType } from "discord.js";
+import { DiscordBotClient } from "../classes/client";
+import { ChatMessageData } from "../types";
 
 
 const command_data = new SlashCommandBuilder()
     .setName("chat")
-    .setDMPermission(false)
     .setDescription(`Request a chat completion`)
+    .setContexts(
+        InteractionContextType.PrivateChannel,
+        InteractionContextType.Guild,
+        InteractionContextType.BotDM
+    )
+    .setIntegrationTypes(
+        ApplicationIntegrationType.UserInstall,
+        ApplicationIntegrationType.GuildInstall
+    )
     .addStringOption(
         option => option
             .setName("message")
@@ -63,7 +74,22 @@ export default class extends Command {
         ).catch(console.error);
 
         if(!completion) return await ctx.error({error: "Failed to get completion"});
-        await ctx.interaction.editReply(completion.resultMessage.content)
+
+        let payload;
+        if(completion.resultMessage.content.length > 2000) {
+            const attachment = new AttachmentBuilder(Buffer.from(completion.resultMessage.content), {name: "response.txt"});
+            payload = {
+                files: [attachment]
+            }
+        } else {
+            payload = {
+                content: completion.resultMessage.content
+            }
+        }
+
+        const result = await ctx.interaction.editReply(payload);
+
+        saveChatCompletion(message, completion.resultMessage.content, model, systemInstructionName || modelConfig.defaultSystemInstructionName, result.id, ctx.interaction.user.id);
     }
 
     override async autocomplete(context: AutocompleteContext): Promise<any> {
@@ -85,4 +111,58 @@ export default class extends Command {
             }
         }
     }
+}
+
+export async function saveChatCompletion(userContent: string, assistantResponse: string, modelName: string, systemInstructionName: string, responseMessageId: string, userId: string, parentMessageId?: string) {
+    await DiscordBotClient.db.query(
+        "INSERT INTO chat_messages (message_id, user_content, assistant_content, model_name, system_instruction_name, user_id, parent_message_id) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        [responseMessageId, userContent, assistantResponse, modelName, systemInstructionName, userId, parentMessageId || null]
+    ).catch(console.error);
+}
+
+export async function hasChatMessage(messageId: string) {
+    const {rows} = await DiscordBotClient.db.query("SELECT * FROM chat_messages WHERE message_id = $1", [messageId]);
+    return rows.length > 0;
+}
+
+export async function getChatHistory(messageId: string) {
+    const {rows} = await DiscordBotClient.db.query<ChatMessageData>(
+`WITH RECURSIVE message_hierarchy AS (
+    SELECT
+        index,
+        message_id,
+        model_name,
+        system_instruction_name,
+        user_content,
+        assistant_content,
+        user_id,
+        parent_message_id
+    FROM
+        chat_messages
+    WHERE
+        message_id = $1
+
+    UNION ALL
+
+    SELECT
+        m.index,
+        m.message_id,
+        m.model_name,
+        m.system_instruction_name,
+        m.user_content,
+        m.assistant_content,
+        m.user_id,
+        m.parent_message_id
+    FROM
+        chat_messages m
+        INNER JOIN message_hierarchy mh ON m.message_id = mh.parent_message_id
+)
+
+SELECT
+    *
+FROM
+    message_hierarchy;`,
+        [messageId]
+    );
+    return rows;
 }

@@ -5,7 +5,7 @@ import { handleComponents } from "./handlers/componentHandler";
 import { handleModals } from "./handlers/modalHandler";
 import { handleAutocomplete } from "./handlers/autocompleteHandler";
 import { handleContexts } from "./handlers/contextHandler";
-import {ActivityType, ApplicationCommandType, InteractionType, PresenceUpdateStatus} from "discord.js";
+import {ActivityType, ApplicationCommandType, InteractionType, Partials, PresenceUpdateStatus} from "discord.js";
 import handleMessage from "./handlers/message";
 import { Pool } from "pg";
 
@@ -27,7 +27,8 @@ const connection = new Pool({
 DiscordBotClient.db = connection
 
 const client = new DiscordBotClient({
-    intents: ["Guilds", "MessageContent", "GuildMessages"]
+    intents: ["Guilds", "MessageContent", "GuildMessages", "DirectMessages"],
+    partials: [Partials.Message, Partials.Channel],
 })
 
 
@@ -41,7 +42,7 @@ client.on("ready", async () => {
     client.components.loadClasses().catch(console.error)
     client.contexts.loadClasses().catch(console.error)
     client.modals.loadClasses().catch(console.error)
-    client.user?.setPresence({activities: [{type: ActivityType.Listening, name: "to Webhead singing in the shower"}], status: PresenceUpdateStatus.DoNotDisturb, })
+    client.user?.setPresence({activities: [{type: ActivityType.Listening, name: "your messages"}], status: PresenceUpdateStatus.DoNotDisturb })
     console.log(`Ready`)
     await client.application?.commands.set([...client.commands.createPostBody(), ...client.contexts.createPostBody()]).catch(console.error)
 })
