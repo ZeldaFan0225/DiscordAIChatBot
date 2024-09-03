@@ -1,7 +1,6 @@
-import { ApplicationCommandType } from "discord.js";
+import { ApplicationCommandType, ContextMenuCommandBuilder } from "discord.js";
 import { Context } from "../classes/context";
 import { ContextContext } from "../classes/contextContext";
-import { ContextMenuCommandBuilder } from "@discordjs/builders";
 
 const command_data = new ContextMenuCommandBuilder()
     .setType(ApplicationCommandType.Message)

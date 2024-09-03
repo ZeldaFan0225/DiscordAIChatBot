@@ -1,8 +1,7 @@
 import { Command } from "../classes/command";
 import { CommandContext } from "../classes/commandContext";
 import { AutocompleteContext } from "../classes/autocompleteContext";
-import { SlashCommandBuilder } from "@discordjs/builders";
-import { ApplicationIntegrationType, AttachmentBuilder, InteractionContextType } from "discord.js";
+import { ApplicationIntegrationType, AttachmentBuilder, InteractionContextType, SlashCommandBuilder } from "discord.js";
 import { DiscordBotClient } from "../classes/client";
 import { ChatMessageData } from "../types";
 
