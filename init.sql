@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS chat_messages (
     index SERIAL,
     message_id VARCHAR(50) PRIMARY KEY,
     model_name VARCHAR(1000) NOT NULL,
-    system_instruction_name VARCHAR(1000) NOT NULL,
+    system_instruction_name VARCHAR(1000),
     user_content text NOT NULL,
     assistant_content text NOT NULL,
     user_id VARCHAR(50),

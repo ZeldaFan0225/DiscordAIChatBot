@@ -4,6 +4,7 @@ import { AutocompleteContext } from "../classes/autocompleteContext";
 import { ApplicationIntegrationType, AttachmentBuilder, InteractionContextType, SlashCommandBuilder } from "discord.js";
 import { DiscordBotClient } from "../classes/client";
 import { ChatMessageData } from "../types";
+import { ChatMessage } from "../classes/connectors/BaseConnector";
 
 
 const command_data = new SlashCommandBuilder()
@@ -60,15 +61,17 @@ export default class extends Command {
         const connector = ctx.client.connectorInstances[modelConfig.connector];
         if(!connector) return await ctx.error({error: "Invalid connector"});
         const systemInstruction = ctx.client.config.systemInstructions[systemInstructionName || modelConfig.defaultSystemInstructionName];
-        if(!systemInstruction) return await ctx.error({error: "Invalid system instruction"});
 
         await ctx.interaction.deferReply();
 
+        const messages: ChatMessage[] = [{role: "user", content: message}]
+
+        if(systemInstruction && modelConfig.systemInstructionAllowed !== false) {
+            messages.unshift({role: "system", content: systemInstruction});
+        }
+
         const completion = await connector.requestChatCompletion(
-            [
-                {role: "system", content: systemInstruction},
-                {role: "user", content: message}
-            ],
+            messages,
             modelConfig.generationOptions
         ).catch(console.error);
 

@@ -34,9 +34,11 @@ export async function handleHey(message: Message, client: DiscordBotClient) {
         return;
     }
 
-    const messages: ChatMessage[] = [
-        {role: "system", content: systemInstruction}
-    ]
+    const messages: ChatMessage[] = []
+
+    if(systemInstruction && modelConfig.systemInstructionAllowed !== false) {
+        messages.unshift({role: "system", content: systemInstruction});
+    }
 
     for(const message of history.slice(-1 * (triggerData.previousMessagesContext || 0))) {
         messages.push({
@@ -53,8 +55,6 @@ export async function handleHey(message: Message, client: DiscordBotClient) {
         content,
         attachments: message.attachments.filter(a => a.contentType?.includes("image")).map(i => i.url)
     });
-
-    console.log(...messages)
 
     const completion = await connector.requestChatCompletion(messages, modelConfig.generationOptions).catch(console.error);
     if(!completion) {

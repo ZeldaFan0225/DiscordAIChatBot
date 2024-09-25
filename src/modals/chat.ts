@@ -33,13 +33,14 @@ export default class extends Modal {
         const connector = ctx.client.connectorInstances[modelConfig.connector];
         if(!connector) return await ctx.error({error: "Invalid connector"});
         const systemInstruction = ctx.client.config.systemInstructions[systemInstructionName || modelConfig.defaultSystemInstructionName];
-        if(!systemInstruction) return await ctx.error({error: "Invalid system instruction"});
 
         await ctx.interaction.deferReply();
 
-        const messages: ChatMessage[] = [
-            {role: "system", content: systemInstruction}
-        ]
+        const messages: ChatMessage[] = []
+
+        if(systemInstruction && modelConfig.systemInstructionAllowed !== false) {
+            messages.unshift({role: "system", content: systemInstruction});
+        }
 
         for(const message of history.slice(-1 * (ctx.client.config.chat.maxHistoryDepth || 0))) {
             messages.push({

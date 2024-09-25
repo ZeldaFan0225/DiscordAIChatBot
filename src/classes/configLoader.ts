@@ -84,6 +84,7 @@ export interface ModelConfiguration {
     model: string;
     displayName: string;
     defaultSystemInstructionName: string;
+    systemInstructionAllowed?: boolean;
     images: {
         supported: boolean;
     };
