@@ -1,5 +1,8 @@
+import { DiscordBotClient } from "../client";
+
 export default abstract class BaseConnector {
     #connectionOptions: ConnectionOptions;
+    static client: DiscordBotClient;
     constructor(options: ConnectionOptions) {
         this.#connectionOptions = options;
     }
