@@ -53,7 +53,7 @@ export async function handleHey(message: Message, client: DiscordBotClient) {
     messages.push({
         role: "user",
         content,
-        attachments: message.attachments.filter(a => a.contentType?.includes("image")).map(i => i.url)
+        attachments: modelConfig.images.supported ? message.attachments.filter(a => a.contentType?.includes("image")).map(i => i.url) : []
     });
 
     const completion = await connector.requestChatCompletion(messages, modelConfig.generationOptions).catch(console.error);

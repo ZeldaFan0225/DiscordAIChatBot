@@ -39,6 +39,12 @@ const command_data = new SlashCommandBuilder()
             .setRequired(false)
             .setAutocomplete(true)
     )
+    .addAttachmentOption(
+        option => option
+            .setName("image")
+            .setDescription("An image to send to the AI")
+            .setRequired(false)
+    )
 
 
 export default class extends Command {
@@ -55,6 +61,7 @@ export default class extends Command {
         const model = ctx.interaction.options.getString("model", true);
         const modelConfig = ctx.client.config.modelConfigurations[model];
         const systemInstructionName = ctx.interaction.options.getString("system_instruction", false);
+        const image = ctx.interaction.options.getAttachment("image");
 
         if(!modelConfig) return await ctx.error({error: "Invalid model"});
 
@@ -64,7 +71,11 @@ export default class extends Command {
 
         await ctx.interaction.deferReply();
 
-        const messages: ChatMessage[] = [{role: "user", content: message}]
+        const messages: ChatMessage[] = [{
+            role: "user",
+            content: message,
+            attachments: image && modelConfig.images.supported ? [image.url] : []
+        }];
 
         if(systemInstruction && modelConfig.systemInstructionAllowed !== false) {
             messages.unshift({role: "system", content: systemInstruction});
