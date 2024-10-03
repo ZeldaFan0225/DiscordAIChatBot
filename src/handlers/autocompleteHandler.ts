@@ -6,6 +6,8 @@ export async function handleAutocomplete(interaction: AutocompleteInteraction, c
     const command = await client.commands.getCommand(interaction).catch(() => null)
     if(!command) return;
     const context = new AutocompleteContext({interaction, client})
+    if(client.config.user_blacklist?.includes(interaction.user.id))
+        return await context.error();
     if(!interaction.channel)
         return await context.error()
     if(command.staff_only && !context.is_staff)

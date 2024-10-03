@@ -53,6 +53,7 @@ export class ConfigLoader {
 
 export interface Config {
     staff_roles: string[];
+    user_blacklist?: string[];
     hey: HeyConfiguration;
     chat: {
         maxHistoryDepth?: number;

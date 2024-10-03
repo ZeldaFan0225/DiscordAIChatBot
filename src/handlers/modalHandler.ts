@@ -7,6 +7,10 @@ export async function handleModals(interaction: ModalSubmitInteraction, client: 
     if(!command) return;
     let context = new ModalContext({interaction, client})
 
+    if(client.config.user_blacklist?.includes(interaction.user.id))
+        return await context.error({
+            error: "You are blacklisted from using this bot"
+        });
     if(command.staff_only && !context.is_staff)
         return await context.error({
             error: "You are not staff"

@@ -1,5 +1,183 @@
 {
     "staff_roles": [
-        "926795718222553098"
-    ]
+        
+    ],
+    "user_blacklist": [
+        
+    ],
+    "hey": {
+        "enabled": true,
+        "triggers": {
+            "hey gpt": {
+                "model": "gpt-4o-mini",
+                "processingEmoji": "1094321943517335642",
+                "systemInstruction": "default",
+                "previousMessagesContext": 5
+            }
+        }
+    },
+    "chat": {
+        "maxHistoryDepth": 5
+    },
+    "systemInstructions": {
+        "default": "You are a helpful, lightweight AI assistant"
+    },
+    "connectorConfigurations": {
+        "OpenAIConnector": {
+            "class": "classes/connectors/OpenAIConnector",
+            "connectionOptions": {
+                "url": "https://api.openai.com/v1/chat/completions",
+                "apiKey": "OPENAI_KEY"
+            }
+        },
+        "WolframOpenAIConnector": {
+            "class": "classes/connectors/WolframOpenAIConnector",
+            "connectionOptions": {
+                "url": "https://api.openai.com/v1/chat/completions",
+                "apiKey": "OPENAI_KEY"
+            }
+        },
+        "WolframConnector": {
+            "class": "classes/connectors/WolframConnector",
+            "connectionOptions": {
+            }
+        },
+        "GroqConnector": {
+            "class": "classes/connectors/OpenAIConnector",
+            "connectionOptions": {
+                "url": "https://api.groq.com/openai/v1/chat/completions",
+                "apiKey": "GROQ_KEY"
+            }
+        },
+        "TogetherAIConnector": {
+            "class": "classes/connectors/TogetherAIConnector",
+            "connectionOptions": {
+                "url": "https://api.together.xyz/v1/chat/completions",
+                "apiKey": "TOGETHERAI_KEY"
+            }
+        },
+        "AnthropicConnector": {
+            "class": "classes/connectors/AnthropicConnector",
+            "connectionOptions": {
+                "url": "https://api.anthropic.com/v1/messages",
+                "apiKey": "ANTHROPIC_KEY"
+            }
+        },
+        "GoogleAIConnector": {
+            "class": "classes/connectors/GoogleAIConnector",
+            "connectionOptions": {
+                "url": "https://generativelanguage.googleapis.com/v1beta",
+                "apiKey": "GOOGLE_AI_KEY"
+            }
+        }
+    },
+    "modelConfigurations": {
+        "o1-preview": {
+            "connector": "OpenAIConnector",
+            "displayName": "o1 preview",
+            "systemInstructionAllowed": false,
+            "images": {
+                "supported": false
+            },
+            "generationOptions": {
+                "model": "o1-preview"
+            }
+        },
+        "o1-mini": {
+            "connector": "OpenAIConnector",
+            "displayName": "o1 mini",
+            "systemInstructionAllowed": false,
+            "images": {
+                "supported": false
+            },
+            "generationOptions": {
+                "model": "o1-mini"
+            }
+        },
+        "gpt-4o-mini": {
+            "connector": "OpenAIConnector",
+            "displayName": "GPT-4o Mini",
+            "defaultSystemInstructionName": "default",
+            "systemInstructionAllowed": true,
+            "images": {
+                "supported": true
+            },
+            "generationOptions": {
+                "model": "gpt-4o-mini"
+            }
+        },
+        "wolfram-gpt-4o-mini": {
+            "connector": "WolframOpenAIConnector",
+            "displayName": "GPT-4o Mini with Wolfram",
+            "defaultSystemInstructionName": "default",
+            "systemInstructionAllowed": true,
+            "images": {
+                "supported": true
+            },
+            "generationOptions": {
+                "model": "gpt-4o-mini"
+            }
+        },
+        "wolfram": {
+            "connector": "WolframConnector",
+            "displayName": "Wolfram",
+            "defaultSystemInstructionName": "default",
+            "systemInstructionAllowed": true,
+            "images": {
+                "supported": true
+            },
+            "generationOptions": {
+                "model": ""
+            }
+        },
+        "claude-3.5-sonnet": {
+            "connector": "AnthropicConnector",
+            "displayName": "Claude 3.5 Sonnet",
+            "defaultSystemInstructionName": "default",
+            "systemInstructionAllowed": true,
+            "images": {
+                "supported": true
+            },
+            "generationOptions": {
+                "model": "claude-3-5-sonnet-20240620",
+                "max_tokens": 4000
+            }
+        },
+        "meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo": {
+            "connector": "TogetherAIConnector",
+            "displayName": "Llama 3.1 405b",
+            "defaultSystemInstructionName": "default",
+            "systemInstructionAllowed": true,
+            "images": {
+                "supported": false
+            },
+            "generationOptions": {
+                "model": "meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo"
+            }
+        },
+        "llama3-70b-8192": {
+            "connector": "GroqConnector",
+            "displayName": "Llama 3 70b",
+            "defaultSystemInstructionName": "default",
+            "systemInstructionAllowed": true,
+            "images": {
+                "supported": false
+            },
+            "generationOptions": {
+                "model": "llama3-70b-8192"
+            }
+        },
+        "gemini-1.5-pro": {
+            "connector": "GoogleAIConnector",
+            "displayName": "Gemini 1.5 Pro",
+            "defaultSystemInstructionName": "default",
+            "systemInstructionAllowed": true,
+            "images": {
+                "supported": true
+            },
+            "generationOptions": {
+                "model": "gemini-1.5-pro"
+            }
+        }
+    }
 }
