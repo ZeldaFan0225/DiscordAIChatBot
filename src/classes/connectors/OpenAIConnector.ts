@@ -1,7 +1,7 @@
 import BaseConnector, {ChatCompletionResult, ChatMessage, ChatMessageRoles, GenerationOptions} from "./BaseConnector";
 
 export default class OpenAIConnector extends BaseConnector {
-    override async requestChatCompletion(messages: ChatMessage[], generationOptions: GenerationOptions): Promise<ChatCompletionResult> {
+    override async requestChatCompletion(messages: ChatMessage[], generationOptions: GenerationOptions, user_id?: string): Promise<ChatCompletionResult> {
         // convert message format to openai format
         const openAiMessages = messages
             .map(m => this.convertToOpenAiMessage(m))
@@ -13,7 +13,8 @@ export default class OpenAIConnector extends BaseConnector {
 
         const response = await this.sendRequest({
             ...generationOptions,
-            messages: openAiMessages
+            messages: openAiMessages,
+            user: user_id
         })
 
         const result = response.choices[0]?.message;
@@ -110,6 +111,7 @@ interface OpenAiCompatiblePayload {
     stop?: string | string[];
     temperature?: number;
     top_p?: number;
+    user?: string;
 }
 
 interface OpenAiCompatibleResponse {

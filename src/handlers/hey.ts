@@ -56,7 +56,11 @@ export async function handleHey(message: Message, client: DiscordBotClient) {
         attachments: modelConfig.images.supported ? message.attachments.filter(a => a.contentType?.includes("image")).map(i => i.url) : []
     });
 
-    const completion = await connector.requestChatCompletion(messages, modelConfig.generationOptions).catch(console.error);
+    const completion = await connector.requestChatCompletion(
+        messages,
+        modelConfig.generationOptions,
+        message.author.id
+    ).catch(console.error);
     if(!completion) {
         if(!message.channel.isDMBased()) await message.reactions.removeAll();
         console.error("Failed to get completion");

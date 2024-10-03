@@ -59,7 +59,8 @@ export default class extends Modal {
 
         const completion = await connector.requestChatCompletion(
             messages,
-            modelConfig.generationOptions
+            modelConfig.generationOptions,
+            ctx.interaction.user.id
         ).catch(console.error);
 
         if(!completion) return await ctx.error({error: "Failed to get completion"});

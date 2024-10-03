@@ -6,7 +6,7 @@ export default abstract class BaseConnector {
     get connectionOptions() {
         return this.#connectionOptions;
     }
-    abstract requestChatCompletion(messages: ChatMessage[], generationOptions: GenerationOptions): Promise<ChatCompletionResult>;
+    abstract requestChatCompletion(messages: ChatMessage[], generationOptions: GenerationOptions, user_id?: string): Promise<ChatCompletionResult>;
 }
 
 export interface ChatCompletionResult {
