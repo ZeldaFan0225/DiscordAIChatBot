@@ -10,11 +10,12 @@ export async function handleCommands(interaction: ChatInputCommandInteraction, c
         return await context.error({
             error: "You are blacklisted from using this bot"
         });
-    if(!interaction.channel)
+    //console.log(interaction)
+    /*if(!interaction.channel)
         return await context.error({
             error: "Please add me to the private thread (by mentioning me) to use commands",
             ephemeral: true
-        })
+        })*/
     if(command.staff_only && !context.is_staff)
         return await context.error({
             error: "You are not staff"
