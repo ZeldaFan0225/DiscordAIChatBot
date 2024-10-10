@@ -1,5 +1,5 @@
 import SuperMap from "@thunder04/supermap";
-import { Client, ClientOptions } from "discord.js";
+import { AttachmentBuilder, Client, ClientOptions } from "discord.js";
 import { Store } from "../stores/store";
 import { StoreTypes } from "../types";
 import { ConfigLoader } from "./configLoader";
@@ -42,5 +42,25 @@ export class DiscordBotClient extends Client {
 		if(!commands?.size) return `/${name}`
 		else if(commands?.find(c => c.name === name)?.id) return `</${name}:${commands?.find(c => c.name === name)!.id}>`
 		else return `/${name}`
+	}
+
+	static async convertToAttachmentBuilder(input: string, filename: string) {
+		if(input.startsWith("data:")) {
+			const [type, data] = input.split(";base64,");
+			if(!type || !data) throw new Error("Invalid data URL");
+	
+			const fileExtension = type.split("/")[1];
+			const buffer = Buffer.from(data, "base64");
+	
+			return new AttachmentBuilder(buffer, {name: `${filename}.${fileExtension}`});
+		} else if(input.startsWith("http")) {
+			const request = await fetch(input);
+			const contentType = request.headers.get("Content-Type") || "image/png";
+			const fileExtension = contentType.split("/")[1];
+	
+			return new AttachmentBuilder(Buffer.from(await request.arrayBuffer()), {name: `${filename}.${fileExtension}`});
+		} else {
+			return new AttachmentBuilder(Buffer.from(input), {name: `${filename}.txt`});
+		}
 	}
 }

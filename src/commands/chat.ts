@@ -90,14 +90,21 @@ export default class extends Command {
         if(!completion) return await ctx.error({error: "Failed to get completion"});
 
         let payload;
+        const files = await Promise.all(
+            (completion.resultMessage.attachments || [])
+                .map((a, i) => DiscordBotClient.convertToAttachmentBuilder(a, `attachment-${i}`))
+        );
+
         if(completion.resultMessage.content.length > 2000) {
             const attachment = new AttachmentBuilder(Buffer.from(completion.resultMessage.content), {name: "response.txt"});
+            files.push(attachment)
             payload = {
-                files: [attachment]
+                files
             }
         } else {
             payload = {
-                content: completion.resultMessage.content
+                content: completion.resultMessage.content,
+                files
             }
         }
 
