@@ -12,9 +12,9 @@ export default class OpenAIConnector extends BaseConnector {
         if(!validated) throw new Error("Message did not pass moderation")
 
         const response = await this.sendRequest({
+            user: user_id,
             ...generationOptions,
-            messages: openAiMessages,
-            user: user_id
+            messages: openAiMessages
         })
 
         const result = response.choices[0]?.message;
