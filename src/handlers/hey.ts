@@ -73,10 +73,10 @@ export async function handleHey(message: Message, client: DiscordBotClient) {
     let completedMessage = completion.resultMessage.content;
     let responseMessage;
 
-    const files = await Promise.all(
+    const files = await Promise.allSettled(
         (completion.resultMessage.attachments || [])
             .map((a, i) => DiscordBotClient.convertToAttachmentBuilder(a, `attachment-${i}`))
-    );
+    ).then(res => res.filter(r => r.status === "fulfilled").map(r => r.value));
 
     if(completedMessage.length > 2000) {
         const attachment = new AttachmentBuilder(Buffer.from(completion.resultMessage.content), {name: "response.txt"});
