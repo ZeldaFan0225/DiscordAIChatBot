@@ -1,6 +1,6 @@
 import BaseConnector, {ChatCompletionResult, ChatMessage, ChatMessageRoles, GenerationOptions} from "./BaseConnector";
 
-export default class WolframOpenAIConnector extends BaseConnector {
+export default class SearxingOpenAIConnector extends BaseConnector {
     override async requestChatCompletion(messages: ChatMessage[], generationOptions: GenerationOptions): Promise<ChatCompletionResult> {
         // convert message format to openai format
         const openAiMessages = messages
@@ -26,8 +26,8 @@ export default class WolframOpenAIConnector extends BaseConnector {
             tools: [{
                 type: "function",
                 function: {
-                    description: "An accurate tool to give exact results for a given query. More scientifically accurate than any large language model.",
-                    name: "wolfram-alpha",
+                    description: "Get up to date information directly from the internet.",
+                    name: "internet",
                     parameters: {
                         type: "object",
                         properties: {
@@ -42,17 +42,17 @@ export default class WolframOpenAIConnector extends BaseConnector {
             }]
         })
 
-        const toolCalls = response.choices[0]!.message.tool_calls?.filter(call => call.function.name === "wolfram-alpha")
+        const toolCalls = response.choices[0]!.message.tool_calls?.filter(call => call.function.name === "internet")
         if(!toolCalls?.length) return response.choices[0]!.message;
 
         messages.push(response.choices[0]!.message)
 
         for(const toolCall of toolCalls) {
-            const wolframResponse = await this.requestWolfram(toolCall.function.arguments)
+            const searxingResponse = await this.requestInternet(toolCall.function.arguments)
 
             messages.push({
                 role: "tool",
-                content: wolframResponse,
+                content: JSON.stringify(searxingResponse),
                 tool_call_id: toolCall.id
             })
         }
@@ -125,23 +125,16 @@ export default class WolframOpenAIConnector extends BaseConnector {
         return openAiMessage;
     }
 
-    private async requestWolfram(prompt: string): Promise<string> {
-        const parameters = new URLSearchParams({
-            appid: process.env["WOLFRAM_ALPHA_ID"]!,
-            input: prompt,
-            format: "plaintext",
-            includepodid: "Result",
-            units: "metric",
-            output: "JSON"
-        })
+    private async requestInternet(prompt: string): Promise<{title: string, url: string, content: string}[]> {
+        const searchParams = new URLSearchParams({q: prompt, format: "json"});
+        const data = await fetch(`${process.env["SEARXING_ORIGIN"]}/search?${searchParams.toString()}`)
+            .then(res => res.json())
 
-        const request = await fetch(`https://api.wolframalpha.com/v2/query?${parameters.toString()}`)
-            .then(res => res.text())
-            .catch(console.error)
-
-        const res = request || "Unable to query result"
-
-        return res;
+        return data.results.slice(0, 5).map((result: any) => ({
+            title: result.title,
+            url: result.url,
+            content: result.content
+        }))
     }
 }
 
