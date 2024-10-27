@@ -68,13 +68,9 @@ export default class AnthropicConnector extends BaseConnector {
     private getBase64FromUrl(url: string): Promise<string> {
         return new Promise((resolve, reject) => {
             fetch(url)
-                .then(res => res.blob())
-                .then(blob => {
-                    const reader = new FileReader();
-                    reader.readAsDataURL(blob);
-                    reader.onloadend = () => {
-                        resolve(reader.result as string);
-                    }
+                .then(async res => {
+                    const base64 = Buffer.from(await res.arrayBuffer()).toString('base64');
+                    resolve(`data:${res.headers.get('content-type')};base64,${base64}`);
                 })
                 .catch(reject)
         })
