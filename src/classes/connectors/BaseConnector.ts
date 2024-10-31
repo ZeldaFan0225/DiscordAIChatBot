@@ -40,4 +40,6 @@ export interface ChatMessage {
     name?: string;
     /** The attachments to be included as a fetchable https url */
     attachments?: string[];
+    /** Optional audio for the response */
+    audio_data_string?: string;
 }

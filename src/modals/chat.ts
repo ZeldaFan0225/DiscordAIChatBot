@@ -72,6 +72,14 @@ export default class extends Modal {
                 .map((a, i) => DiscordBotClient.convertToAttachmentBuilder(a, `attachment-${i}`))
         ).then(res => res.filter(r => r.status === "fulfilled").map(r => r.value));
 
+        if(completion.resultMessage.audio_data_string) {
+            const [contentType, data] = completion.resultMessage.audio_data_string.slice(5).split(";base64,");
+            if(contentType && data)  {
+                const attachment = new AttachmentBuilder(Buffer.from(data, "base64"), {name: `response.${contentType.split("/")[1]}`});
+                files.unshift(attachment)
+            }
+        }
+
         if(completion.resultMessage.content.length > 2000) {
             const attachment = new AttachmentBuilder(Buffer.from(completion.resultMessage.content), {name: "response.txt"});
             files.push(attachment)

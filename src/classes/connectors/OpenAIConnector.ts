@@ -20,7 +20,16 @@ export default class OpenAIConnector extends BaseConnector {
         const result = response.choices[0]?.message;
         if(!result) throw new Error("Failed to get response from OpenAI", {cause: response});
 
-        return {resultMessage: result};
+        if(result.audio) {
+            if(!result.content) result.content = result.audio.transcript;
+        }
+
+        return {
+            resultMessage: {
+                ...result,
+                audio_data_string: result.audio?.data ? `data:audio/${generationOptions["audio"]?.["format"]};base64,${result.audio.data}` : undefined
+            }
+        };
     }
 
     private async passesModeration(messages: OpenAiChatMessage[]): Promise<boolean> {
@@ -150,7 +159,13 @@ interface OpenAiUserMessage extends OpenAiBaseMessage {
 
 interface OpenAiBotMessage extends OpenAiBaseMessage {
     role: "assistant";
-    content: string
+    content: string,
+    audio?: {
+        expires_at: number,
+        transcript: string,
+        data: string,
+        id: string
+    }
 }
 
 interface OpenAiSystemMessage extends OpenAiBaseMessage {
