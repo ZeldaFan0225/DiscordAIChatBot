@@ -1,14 +1,14 @@
 {
-  "name": "bot_base",
+  "name": "discord-ai-chat-bot",
   "version": "1.2.1",
   "description": "",
   "main": "dist/index.js",
   "scripts": {
-    "deploy": "npx tsc -p DiscordBotBase && node ."
+    "deploy": "npx tsc -p DiscordAIChatBot && node ."
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ZeldaFan0225/DiscordBotBase.git"
+    "url": "git+https://github.com/ZeldaFan0225/DiscordAIChatBot.git"
   },
   "author": "",
   "license": "ISC",
