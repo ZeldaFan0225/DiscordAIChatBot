@@ -56,6 +56,7 @@ export default class GoogleAIConnector extends BaseConnector {
         let result: GoogleAIMessage[] = [];
         for (const message of messages) {
             result.push({
+                role: message.role === "assistant" ? "model" : "user",
                 parts: [
                     { text: message.content },
                     ...(message.attachments ? await this.formatAttachments(message.attachments) : [])
@@ -99,6 +100,7 @@ export default class GoogleAIConnector extends BaseConnector {
 }
 
 interface GoogleAIMessage {
+    role?: string;
     parts: GoogleAIMessagePart[];
 }
 

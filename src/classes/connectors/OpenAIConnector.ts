@@ -111,9 +111,12 @@ interface OpenAIModerationResponse {
 interface OpenAiCompatiblePayload {
     messages: OpenAiChatMessage[];
     model: string;
+    reasoning_effort?: "low" | "medium" | "high";
     frequency_penalty?: number;
     logit_bias?: Record<string, number>;
+    /** @deprecated */
     max_tokens?: number;
+    max_completion_tokens?: number;
     presence_penalty?: number;
     response_format?:  {type: "text" | "json_object"};
     seed?: number;
