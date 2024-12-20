@@ -5,7 +5,11 @@ import BaseConnector, { ChatCompletionResult, ChatMessage, GenerationOptions } f
 export default class GoogleAIConnector extends BaseConnector {
     override async requestChatCompletion(messages: ChatMessage[], generationOptions: GenerationOptions): Promise<ChatCompletionResult> {
         const googleAIMessages = await this.formatMessages(messages);
-        const response = await this.sendRequest(googleAIMessages, generationOptions);
+        const systemInstruction = messages.find(m => m.role === "system")?.content;
+        const response = await this.sendRequest(googleAIMessages, {
+            ...generationOptions,
+            system_instruction: { parts: [{ text: systemInstruction }] }
+        });
 
         if (!response.candidates || response.candidates.length === 0) {
             throw new Error("Failed to get response from Google AI", { cause: response });
@@ -55,6 +59,7 @@ export default class GoogleAIConnector extends BaseConnector {
     private async formatMessages(messages: ChatMessage[]) {
         let result: GoogleAIMessage[] = [];
         for (const message of messages) {
+            if(message.role === "system") continue;
             result.push({
                 role: message.role === "assistant" ? "model" : "user",
                 parts: [
@@ -83,19 +88,11 @@ export default class GoogleAIConnector extends BaseConnector {
     }
 
     
-    private getBase64FromUrl(url: string): Promise<string> {
-        return new Promise((resolve, reject) => {
-            fetch(url)
-                .then(res => res.blob())
-                .then(blob => {
-                    const reader = new FileReader();
-                    reader.readAsDataURL(blob);
-                    reader.onloadend = () => {
-                        resolve(reader.result as string);
-                    }
-                })
-                .catch(reject)
-        })
+    private async getBase64FromUrl(url: string): Promise<string> {
+        const response = await fetch(url);
+        const contentType = response.headers.get('content-type') || 'application/octet-stream';
+        const buffer = Buffer.from(await response.arrayBuffer());
+        return `data:${contentType};base64,${buffer.toString('base64')}`;
     }
 }
 
