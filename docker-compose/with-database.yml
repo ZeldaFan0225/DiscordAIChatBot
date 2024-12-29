@@ -1,0 +1,40 @@
+services:
+  app:
+    image: discord-chatbot:latest
+    volumes:
+      - ../config.json:/app/config.json:ro
+    env_file:
+      - ../.env
+    environment:
+      - NODE_ENV=production
+      - DB_IP=db
+      - DB_PORT=5432
+    depends_on:
+      - db
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  db:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../init.sql:/docker-entrypoint-initdb.d/init.sql # provide init.sql so database is not uninitialized
+    env_file:
+      - ../.env
+    environment:
+      - POSTGRES_USER=${DB_USERNAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+
+networks:
+  app-network:
+    driver: bridge

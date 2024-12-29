@@ -10,12 +10,13 @@ import handleMessage from "./handlers/message";
 import { Pool } from "pg";
 import BaseConnector from "./classes/connectors/BaseConnector";
 
-const RE_INI_KEY_VAL = /^\s*([\w.-]+)\s*=\s*(.*)?\s*$/
-for (const line of readFileSync(`${process.cwd()}/.env`, 'utf8').split(/[\r\n]/)) {
-    const [, key, value] = line.match(RE_INI_KEY_VAL) || []
-    if (!key) continue
-
-    process.env[key] = value?.trim()
+if (process.env['NODE_ENV'] !== 'production') {
+    const RE_INI_KEY_VAL = /^\s*([\w.-]+)\s*=\s*(.*)?\s*$/
+    for (const line of readFileSync(`${process.cwd()}/.env`, 'utf8').split(/[\r\n]/)) {
+        const [, key, value] = line.match(RE_INI_KEY_VAL) || []
+        if (!key) continue
+        process.env[key] = value?.trim()
+    }
 }
 
 const connection = new Pool({

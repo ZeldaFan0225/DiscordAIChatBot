@@ -4,7 +4,8 @@
   "description": "",
   "main": "dist/index.js",
   "scripts": {
-    "deploy": "npx tsc -p DiscordAIChatBot && node ."
+    "deploy": "npx tsc -p . && node .",
+    "build": "npx tsc -p ."
   },
   "repository": {
     "type": "git",
