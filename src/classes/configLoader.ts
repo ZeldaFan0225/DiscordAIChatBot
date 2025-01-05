@@ -55,9 +55,14 @@ export interface Config {
     staff_roles: string[];
     user_blacklist?: string[];
     hey: HeyConfiguration;
-    chat: {
+    chat?: {
         maxHistoryDepth?: number;
-    }
+    },
+    ask?: {
+        model?: string;
+        systemInstruction?: string;
+        initialPromptTemplate?: string;
+    },
     systemInstructions: Record<string, string>;
     connectorConfigurations: Record<string, ConnectorConfiguration>;
     modelConfigurations: Record<string, ModelConfiguration>

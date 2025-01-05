@@ -1,33 +1,37 @@
-import { AttachmentBuilder } from "discord.js";
+import { AttachmentBuilder, Message } from "discord.js";
 import { ChatMessage } from "../classes/connectors/BaseConnector";
 import { Modal } from "../classes/modal";
 import { ModalContext } from "../classes/modalContext";
-import { getChatHistory, hasChatMessage, saveChatCompletion } from "../commands/chat";
+import { saveChatCompletion } from "../commands/chat";
 import { DiscordBotClient } from "../classes/client";
-
 
 export default class extends Modal {
     constructor() {
         super({
-            name: "chat",
+            name: "ask",
             staff_only: false,
-            regex: /chat_\d+/
+            regex: /ask_\d+/
         })
     }
 
     override async run(ctx: ModalContext): Promise<any> {
         const [,id] = ctx.interaction.customId.split("_");
-        const message = ctx.interaction.fields.getTextInputValue("response");
+        const message = ctx.interaction.fields.getTextInputValue("question");
 
-        const hasHistory = await hasChatMessage(id!);
-        if(!hasHistory) return await ctx.error({error: "No chat message found"});
+        const targetMessage = ctx.client.cache.get(`ask_${id}`) as Message;
+        if (!targetMessage) return await ctx.error({ error: "Invalid message" });
+        ctx.client.cache.delete(`ask_${id}`);
 
-        const history = (await getChatHistory(id!)).reverse();
+        const targetMessageContent = this.getMessageContent(targetMessage).trim();
+        if(!targetMessageContent) return await ctx.error({ error: "Message is empty" });
 
-        const model = history.at(-1)!.model_name;
-        const modelConfig = ctx.client.config.modelConfigurations[model];
+        const template = ctx.client.config.ask?.initialPromptTemplate || "Take the following message:\n\n{{TARGET_MESSAGE_CONTENT}}\n\nWhat I need you to do:\n{{USER_PROMPT}}";
+        const prompt = template.replaceAll("{{TARGET_MESSAGE_CONTENT}}", targetMessageContent).replaceAll("{{USER_PROMPT}}", message)
+
+        const modelName = ctx.client.config.ask?.model || "default";
+        const modelConfig = ctx.client.config.modelConfigurations[modelName];
         if(!modelConfig) return await ctx.error({error: "Invalid model"});
-        const systemInstructionName = history.at(-1)!.system_instruction_name || modelConfig!.defaultSystemInstructionName;
+        const systemInstructionName = ctx.client.config.ask?.systemInstruction || modelConfig!.defaultSystemInstructionName;
 
         if(!modelConfig) return await ctx.error({error: "Invalid model"});
 
@@ -43,19 +47,9 @@ export default class extends Modal {
             messages.unshift({role: "system", content: systemInstruction});
         }
 
-        for(const message of history.slice(-1 * (ctx.client.config.chat?.maxHistoryDepth || 0))) {
-            messages.push({
-                role: "user",
-                content: message.user_content
-            }, {
-                role: "assistant",
-                content: message.assistant_content
-            })
-        }
-
         messages.push({
             role: "user",
-            content: message
+            content: prompt
         });
 
         const completion = await connector.requestChatCompletion(
@@ -95,6 +89,15 @@ export default class extends Modal {
 
         const result = await ctx.interaction.editReply(payload);
 
-        saveChatCompletion(message, completion.resultMessage.content, model, systemInstructionName || modelConfig.defaultSystemInstructionName, result.id, ctx.interaction.user.id, id!);
+        saveChatCompletion(prompt, completion.resultMessage.content, modelName, systemInstructionName || modelConfig.defaultSystemInstructionName, result.id, ctx.interaction.user.id);
+    }
+
+    getMessageContent(message: Message) {
+        const content = message.content;
+        const embedContent = message.embeds.map(embed => {
+            return `${embed.title}\n${embed.description}\n${embed.fields.map(field => `${field.name}\n${field.value}`).join("\n")}`
+        }).join("\n");
+
+        return `${content}\n${embedContent}`;
     }
 }

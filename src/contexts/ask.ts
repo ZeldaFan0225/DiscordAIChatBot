@@ -4,37 +4,34 @@ import { ContextContext } from "../classes/contextContext";
 
 const command_data = new ContextMenuCommandBuilder()
     .setType(ApplicationCommandType.Message)
-    .setName("Chat")
+    .setName("Ask")
     .setContexts(0, 1, 2)
     .setIntegrationTypes(0, 1)
 
 export default class extends Context {
     constructor() {
         super({
-            name: "Chat",
+            name: "Ask",
             command_data: command_data.toJSON(),
             staff_only: false,
         })
     }
 
     override async run(ctx: ContextContext<ApplicationCommandType.Message>): Promise<any> {
-        if (ctx.interaction.targetMessage.author.id !== ctx.interaction.applicationId)
-            return await ctx.error({ error: "Can only be used on messages sent by me." })
-        if (!["chat", "ask"].includes(ctx.interaction.targetMessage.interaction?.commandName.toLocaleLowerCase()!))
-            return await ctx.error({ error: "Can only be used on chat messages." })
+        ctx.client.cache.set(`ask_${ctx.interaction.targetMessage.id}`, ctx.interaction.targetMessage, 1000 * 60 * 60)
 
         const modal = {
-            title: `Respond to ${ctx.client.user?.displayName}`,
-            custom_id: `chat_${ctx.interaction.targetMessage.id}`,
+            title: `Ask about ${ctx.interaction.targetMessage.author.username.slice(0,24)}'s message`,
+            custom_id: `ask_${ctx.interaction.targetMessage.id}`,
             components: [{
                 type: 1,
                 components: [{
                     type: 4,
                     style: 2,
-                    placeholder: "Your response",
+                    placeholder: "Your question",
                     required: true,
-                    custom_id: "response",
-                    label: "Response",
+                    custom_id: "question",
+                    label: "Question",
                 }]
             }]
         }
