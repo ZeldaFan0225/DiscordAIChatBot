@@ -99,6 +99,11 @@ Create `config.json` from template:
     "chat": {
         "maxHistoryDepth": 5
     },
+    "ask": {
+        "model": "gpt-4o-mini",
+        "systemInstruction": "default",
+        "initialPromptTemplate": "Take the following message:\n\n{{TARGET_MESSAGE_CONTENT}}\n\nWhat I need you to do:\n{{USER_PROMPT}}"
+    },
     "systemInstructions": {
         "default": "You are a helpful, lightweight AI assistant"
     },
@@ -151,6 +156,70 @@ npm run deploy -- --disable-validation
 
 # For Node.js version 22 and above
 node --run deploy --disable-validation
+```
+
+## Docker Deployment 🐳
+
+You can deploy the bot using Docker with two different database configurations:
+
+### 1. Build the Docker Image
+```bash
+# Build the image
+docker build -t discord-chatbot:latest .
+```
+
+### 2. Choose a Deployment Option
+
+#### Option A: Integrated Database
+This option runs both the bot and PostgreSQL database in Docker containers:
+
+1. Navigate to the docker-compose directory:
+```bash
+cd docker-compose
+```
+
+2. Start the services:
+```bash
+docker-compose -f with-database.yml up -d
+```
+
+This setup:
+- Creates a Docker network for container communication
+- Runs PostgreSQL in a container with persistent volume
+- Automatically initializes the database using init.sql
+- Connects the bot to the containerized database
+
+#### Option B: Database on Host
+Use this option if you're running PostgreSQL on your host machine:
+
+1. Navigate to the docker-compose directory:
+```bash
+cd docker-compose
+```
+
+2. Start the service:
+```bash
+docker-compose -f database-on-host.yml up -d
+```
+
+This setup:
+- Runs only the bot in a container
+- Connects to PostgreSQL running on your host machine
+- Uses host.docker.internal to communicate with the host's database
+
+### Configuration
+For both options:
+- Ensure your .env file is present in the project root
+- Make sure config.json is present in the project root
+- The Docker setup will automatically mount these files into the container
+
+### Stopping the Services
+```bash
+# For either option, in the docker-compose directory:
+docker-compose -f <filename>.yml down
+
+# To also remove the database volume (Option A only):
+docker-compose -f with-database.yml down -v
 ```
 
 ## Development Setup 🛠️
