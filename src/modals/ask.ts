@@ -37,7 +37,7 @@ export default class extends Modal {
 
         const connector = ctx.client.connectorInstances[modelConfig.connector];
         if(!connector) return await ctx.error({error: "Invalid connector"});
-        const systemInstruction = ctx.client.config.systemInstructions[systemInstructionName || modelConfig.defaultSystemInstructionName];
+        const systemInstruction = ctx.client.config.systemInstructions[systemInstructionName || modelConfig.defaultSystemInstructionName || "default"];
 
         await ctx.interaction.deferReply();
 
@@ -89,7 +89,7 @@ export default class extends Modal {
 
         const result = await ctx.interaction.editReply(payload);
 
-        saveChatCompletion(prompt, completion.resultMessage.content, modelName, systemInstructionName || modelConfig.defaultSystemInstructionName, result.id, ctx.interaction.user.id);
+        saveChatCompletion(prompt, completion.resultMessage.content, modelName, systemInstructionName || modelConfig.defaultSystemInstructionName || "default", result.id, ctx.interaction.user.id);
     }
 
     getMessageContent(message: Message) {

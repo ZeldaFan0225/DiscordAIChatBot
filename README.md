@@ -137,7 +137,20 @@ Create `config.json` from template:
 
 5. **Launch the Bot**
 ```bash
+# For Node.js version 20 or below
 npm run deploy
+
+# For Node.js version 22 and above
+node --run deploy
+```
+
+Note: To disable validation of the config file when starting the process, use the `--disable-validation` flag:
+```bash
+# For Node.js version 20 or below
+npm run deploy -- --disable-validation
+
+# For Node.js version 22 and above
+node --run deploy --disable-validation
 ```
 
 ## Development Setup 🛠️

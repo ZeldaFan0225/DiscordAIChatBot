@@ -27,7 +27,7 @@ export async function handleHey(message: Message, client: DiscordBotClient) {
         return;
     }
 
-    const systemInstruction = client.config.systemInstructions[triggerData.systemInstruction || modelConfig.defaultSystemInstructionName];
+    const systemInstruction = client.config.systemInstructions[triggerData.systemInstruction || modelConfig.defaultSystemInstructionName || "default"];
     if(!systemInstruction) {
         if(!message.channel.isDMBased()) await message.reactions.removeAll();
         console.error(`Invalid system instruction ${triggerData.systemInstruction || modelConfig.defaultSystemInstructionName}`);
