@@ -1,4 +1,5 @@
 import { DiscordBotClient } from "../client";
+import { UpdatesEmitter } from "../updatesEmitter";
 
 export default abstract class BaseConnector {
     #connectionOptions: ConnectionOptions;
@@ -9,7 +10,11 @@ export default abstract class BaseConnector {
     get connectionOptions() {
         return this.#connectionOptions;
     }
-    abstract requestChatCompletion(messages: ChatMessage[], generationOptions: GenerationOptions, user_id?: string): Promise<ChatCompletionResult>;
+    abstract requestChatCompletion(
+        messages: ChatMessage[],
+        generationOptions: GenerationOptions,
+        requestOptions: RequestOptions
+    ): Promise<ChatCompletionResult>;
 }
 
 export interface ChatCompletionResult {
@@ -19,6 +24,11 @@ export interface ChatCompletionResult {
 export interface ConnectionOptions {
     url: string;
     apiKey: string;
+}
+
+export interface RequestOptions {
+    userId?: string;
+    updatesEmitter: UpdatesEmitter;
 }
 
 export interface GenerationOptions extends Record<string, any> {

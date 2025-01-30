@@ -2,6 +2,7 @@ import { AttachmentBuilder, Message } from "discord.js";
 import { DiscordBotClient } from "../classes/client";
 import { ChatMessage } from "../classes/connectors/BaseConnector";
 import { HeyMessageData } from "../types";
+import { UpdateEmitterEvents, UpdatesEmitter } from "../classes/updatesEmitter";
 
 export async function handleHey(message: Message, client: DiscordBotClient) {
     const {triggerName, history} = await getHeyData(client, message);
@@ -56,11 +57,25 @@ export async function handleHey(message: Message, client: DiscordBotClient) {
         attachments: modelConfig.images.supported ? message.attachments.filter(a => a.contentType?.includes("image")).map(i => i.url) : []
     });
 
+    const updatesEmitter = new UpdatesEmitter();
+    let updateMessage: Message | undefined;
+    updatesEmitter.on(UpdateEmitterEvents.UPDATE, async (text) => {
+        if(updateMessage) updateMessage.edit({content: `Processing... ${text}`});
+        else updateMessage = await message.reply({content: `Processing... ${text}`});
+    });
+
     const completion = await connector.requestChatCompletion(
         messages,
         modelConfig.generationOptions,
-        message.author.id
+        {
+            userId: message.author.id,
+            updatesEmitter
+        }
     ).catch(console.error);
+
+    updatesEmitter.removeAllListeners(UpdateEmitterEvents.UPDATE);
+    await updateMessage?.delete();
+
     if(!completion) {
         if(!message.channel.isDMBased()) await message.reactions.removeAll();
         console.error("Failed to get completion");

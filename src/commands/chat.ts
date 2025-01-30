@@ -5,6 +5,7 @@ import { ApplicationIntegrationType, AttachmentBuilder, InteractionContextType, 
 import { DiscordBotClient } from "../classes/client";
 import { ChatMessageData } from "../types";
 import { ChatMessage } from "../classes/connectors/BaseConnector";
+import { UpdateEmitterEvents, UpdatesEmitter } from "../classes/updatesEmitter";
 
 
 const command_data = new SlashCommandBuilder()
@@ -81,11 +82,21 @@ export default class extends Command {
             messages.unshift({role: "system", content: systemInstruction});
         }
 
+        const updatesEmitter = new UpdatesEmitter();
+        updatesEmitter.on(UpdateEmitterEvents.UPDATE, (text) => {
+            ctx.interaction.editReply({content: `Processing... ${text}`});
+        });
+
         const completion = await connector.requestChatCompletion(
             messages,
             modelConfig.generationOptions,
-            ctx.interaction.user.id
+            {
+                userId: ctx.interaction.user.id,
+                updatesEmitter
+            }
         ).catch(console.error);
+
+        updatesEmitter.removeAllListeners(UpdateEmitterEvents.UPDATE);
 
         if(!completion) return await ctx.error({error: "Failed to get completion"});
 

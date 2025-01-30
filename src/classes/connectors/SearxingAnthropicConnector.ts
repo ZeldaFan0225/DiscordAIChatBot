@@ -1,18 +1,20 @@
-import BaseConnector, {ChatCompletionResult, ChatMessage, ChatMessageRoles, GenerationOptions} from "./BaseConnector";
+import { UpdatesEmitter } from "../updatesEmitter";
+import BaseConnector, {ChatCompletionResult, ChatMessage, ChatMessageRoles, GenerationOptions, RequestOptions} from "./BaseConnector";
 
 export default class AnthropicConnector extends BaseConnector {
-    override async requestChatCompletion(messages: ChatMessage[], generationOptions: GenerationOptions): Promise<ChatCompletionResult> {
+    override async requestChatCompletion(messages: ChatMessage[], generationOptions: GenerationOptions, requestOptions: RequestOptions): Promise<ChatCompletionResult> {
         // convert message format to openai format
         const anthropicMessages = await this.formatMessages(messages);
 
-        const response = await this.executeToolCall(anthropicMessages, generationOptions)
+        const response = await this.executeToolCall(anthropicMessages, generationOptions, requestOptions.updatesEmitter)
 
         return {
             resultMessage: response
         };
     }
 
-    private async executeToolCall(messages: ClaudeMessage[], generationOptions: GenerationOptions, depth = 5): Promise<ChatMessage> {
+    private async executeToolCall(messages: ClaudeMessage[], generationOptions: GenerationOptions, updatesEmitter: UpdatesEmitter, depth = 5): Promise<ChatMessage> {
+        updatesEmitter.sendUpdate("Requesting completion...")
         const response = await this.sendRequest({
             max_tokens: 4096,
             ...generationOptions,
@@ -45,6 +47,8 @@ export default class AnthropicConnector extends BaseConnector {
             content: response.content
         })
 
+        updatesEmitter.sendUpdate("Searching the internet for information...")
+
         const toolContent: ClaudeMessage["content"] = []
 
         for(const toolCall of toolCalls) {
@@ -62,7 +66,7 @@ export default class AnthropicConnector extends BaseConnector {
             content: toolContent
         })
 
-        return this.executeToolCall(messages, generationOptions,  depth - 1)
+        return this.executeToolCall(messages, generationOptions, updatesEmitter,  depth - 1)
     }
 
     private async sendRequest(payload: AnthropicPayload): Promise<AnthropicResponse> {
