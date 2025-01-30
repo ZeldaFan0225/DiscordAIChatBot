@@ -61,7 +61,7 @@ export default class extends Modal {
 
         const updatesEmitter = new UpdatesEmitter();
         updatesEmitter.on(UpdateEmitterEvents.UPDATE, async (text) => {
-            await ctx.interaction.editReply({content: `Processing... ${text}`});
+            await ctx.interaction.editReply({content: `⌛ ${text}`});
         });
 
         const completion = await connector.requestChatCompletion(

@@ -60,8 +60,8 @@ export async function handleHey(message: Message, client: DiscordBotClient) {
     const updatesEmitter = new UpdatesEmitter();
     let updateMessage: Message | undefined;
     updatesEmitter.on(UpdateEmitterEvents.UPDATE, async (text) => {
-        if(updateMessage) updateMessage.edit({content: `Processing... ${text}`});
-        else updateMessage = await message.reply({content: `Processing... ${text}`});
+        if(updateMessage) updateMessage.edit({content: `⌛ ${text}`});
+        else updateMessage = await message.reply({content: `⌛ ${text}`});
     });
 
     const completion = await connector.requestChatCompletion(

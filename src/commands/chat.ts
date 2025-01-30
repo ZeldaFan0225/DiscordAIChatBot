@@ -84,7 +84,7 @@ export default class extends Command {
 
         const updatesEmitter = new UpdatesEmitter();
         updatesEmitter.on(UpdateEmitterEvents.UPDATE, (text) => {
-            ctx.interaction.editReply({content: `Processing... ${text}`});
+            ctx.interaction.editReply({content: `⌛ ${text}`});
         });
 
         const completion = await connector.requestChatCompletion(
