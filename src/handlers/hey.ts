@@ -74,10 +74,10 @@ export async function handleHey(message: Message, client: DiscordBotClient) {
     ).catch(console.error);
 
     updatesEmitter.removeAllListeners(UpdateEmitterEvents.UPDATE);
-    await updateMessage?.delete();
 
     if(!completion) {
         if(!message.channel.isDMBased()) await message.reactions.removeAll();
+        await updateMessage?.delete();
         console.error("Failed to get completion");
         return;
     }
@@ -101,19 +101,27 @@ export async function handleHey(message: Message, client: DiscordBotClient) {
         }
     }
 
+    let payload;
     if(completedMessage.length > 2000) {
         const attachment = new AttachmentBuilder(Buffer.from(completion.resultMessage.content), {name: "response.txt"});
         files.push(attachment);
-        responseMessage = await message.reply({
+        payload = {
             files,
             allowedMentions: {repliedUser: false}
-        });
+        }
     } else {
-        responseMessage = await message.reply({
+        payload = {
             content: completedMessage,
             files,
             allowedMentions: {repliedUser: false}
-        });
+        }
+    }
+
+    if(updateMessage) {
+        await updateMessage.edit(payload);
+        responseMessage = updateMessage;
+    } else {
+        responseMessage = await message.reply(payload);
     }
 
     await saveHeyCompletion(content, completion.resultMessage.content, triggerName, responseMessage.id, message.author.id, history.at(-1)?.message_id);
