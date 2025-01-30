@@ -1,24 +1,27 @@
-import BaseConnector, {ChatCompletionResult, ChatMessage, ChatMessageRoles, GenerationOptions} from "./BaseConnector";
+import BaseConnector, {ChatCompletionResult, ChatMessage, ChatMessageRoles, GenerationOptions, RequestOptions} from "./BaseConnector";
 
 export default class WolframOpenAIConnector extends BaseConnector {
-    override async requestChatCompletion(messages: ChatMessage[], generationOptions: GenerationOptions): Promise<ChatCompletionResult> {
+    override async requestChatCompletion(messages: ChatMessage[], generationOptions: GenerationOptions, requestOptions: RequestOptions): Promise<ChatCompletionResult> {
         // convert message format to openai format
         const openAiMessages = messages
             .map(m => this.convertToOpenAiMessage(m))
             .filter(m => m !== null) as OpenAiChatMessage[];
 
+        requestOptions.updatesEmitter?.sendUpdate("Checking message moderation...")
         const validated = await this.passesModeration(openAiMessages)
 
         if(!validated) throw new Error("Message did not pass moderation")
 
-        const response = await this.executeToolCall(openAiMessages, generationOptions)
+        requestOptions.updatesEmitter?.sendUpdate("Message passed moderation check")
+        const response = await this.executeToolCall(openAiMessages, generationOptions, requestOptions)
 
         return {
             resultMessage: response
         };
     }
 
-    private async executeToolCall(messages: OpenAiChatMessage[], generationOptions: GenerationOptions, depth = 5): Promise<OpenAiBotMessage> {
+    private async executeToolCall(messages: OpenAiChatMessage[], generationOptions: GenerationOptions, requestOptions: RequestOptions, depth = 5): Promise<OpenAiBotMessage> {
+        requestOptions.updatesEmitter?.sendUpdate("Requesting completion from OpenAI...")
         const response = await this.sendRequest({
             ...generationOptions,
             messages,
@@ -47,6 +50,7 @@ export default class WolframOpenAIConnector extends BaseConnector {
 
         messages.push(response.choices[0]!.message)
 
+        requestOptions.updatesEmitter?.sendUpdate("Computing with Wolfram Alpha...")
         for(const toolCall of toolCalls) {
             const wolframResponse = await this.requestWolfram(toolCall.function.arguments)
 
@@ -57,7 +61,7 @@ export default class WolframOpenAIConnector extends BaseConnector {
             })
         }
 
-        return this.executeToolCall(messages, generationOptions,  depth - 1)
+        return this.executeToolCall(messages, generationOptions, requestOptions, depth - 1)
     }
 
     private async passesModeration(messages: OpenAiChatMessage[]): Promise<boolean> {

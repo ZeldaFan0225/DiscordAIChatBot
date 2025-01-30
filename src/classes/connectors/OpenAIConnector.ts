@@ -1,18 +1,21 @@
-import BaseConnector, {ChatCompletionResult, ChatMessage, ChatMessageRoles, GenerationOptions} from "./BaseConnector";
+import BaseConnector, {ChatCompletionResult, ChatMessage, ChatMessageRoles, GenerationOptions, RequestOptions} from "./BaseConnector";
 
 export default class OpenAIConnector extends BaseConnector {
-    override async requestChatCompletion(messages: ChatMessage[], generationOptions: GenerationOptions, user_id?: string): Promise<ChatCompletionResult> {
+    override async requestChatCompletion(messages: ChatMessage[], generationOptions: GenerationOptions, requestChatCompletion: RequestOptions): Promise<ChatCompletionResult> {
         // convert message format to openai format
         const openAiMessages = messages
             .map(m => this.convertToOpenAiMessage(m))
             .filter(m => m !== null) as OpenAiChatMessage[];
 
+        requestChatCompletion.updatesEmitter?.sendUpdate("Checking message moderation...")
         const validated = await this.passesModeration(openAiMessages)
 
         if(!validated) throw new Error("Message did not pass moderation")
 
+        requestChatCompletion.updatesEmitter?.sendUpdate("Requesting completion from OpenAI...")
+
         const response = await this.sendRequest({
-            user: user_id,
+            user: requestChatCompletion.userId,
             ...generationOptions,
             messages: openAiMessages
         })

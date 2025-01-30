@@ -1,7 +1,8 @@
-import BaseConnector, {ChatCompletionResult, ChatMessage, GenerationOptions} from "./BaseConnector";
+import BaseConnector, {ChatCompletionResult, ChatMessage, GenerationOptions, RequestOptions} from "./BaseConnector";
 
-export default class OpenAIConnector extends BaseConnector {
-    override async requestChatCompletion(messages: ChatMessage[], _generationOptions: GenerationOptions): Promise<ChatCompletionResult> {
+export default class WolframConnector extends BaseConnector {
+    override async requestChatCompletion(messages: ChatMessage[], _generationOptions: GenerationOptions, requestOptions: RequestOptions): Promise<ChatCompletionResult> {
+        requestOptions.updatesEmitter?.sendUpdate("Requesting computation from Wolfram Alpha...")
         const result = await this.requestWolfram(messages.at(-1)!.content)
 
         return {

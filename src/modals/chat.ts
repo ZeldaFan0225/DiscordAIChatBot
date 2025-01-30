@@ -4,6 +4,7 @@ import { Modal } from "../classes/modal";
 import { ModalContext } from "../classes/modalContext";
 import { getChatHistory, hasChatMessage, saveChatCompletion } from "../commands/chat";
 import { DiscordBotClient } from "../classes/client";
+import { UpdateEmitterEvents, UpdatesEmitter } from "../classes/updatesEmitter";
 
 
 export default class extends Modal {
@@ -58,11 +59,21 @@ export default class extends Modal {
             content: message
         });
 
+        const updatesEmitter = new UpdatesEmitter();
+        updatesEmitter.on(UpdateEmitterEvents.UPDATE, async (text) => {
+            await ctx.interaction.editReply({content: `⌛ ${text}`});
+        });
+
         const completion = await connector.requestChatCompletion(
             messages,
             modelConfig.generationOptions,
-            ctx.interaction.user.id
+            {
+                userId: ctx.interaction.user.id,
+                updatesEmitter
+            }
         ).catch(console.error);
+
+        updatesEmitter.removeAllListeners(UpdateEmitterEvents.UPDATE);
 
         if(!completion) return await ctx.error({error: "Failed to get completion"});
 

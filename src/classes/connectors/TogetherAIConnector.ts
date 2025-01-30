@@ -1,12 +1,13 @@
-import BaseConnector, {ChatCompletionResult, ChatMessage, GenerationOptions} from "./BaseConnector";
+import BaseConnector, {ChatCompletionResult, ChatMessage, GenerationOptions, RequestOptions} from "./BaseConnector";
 
 export default class TogetherAIConnector extends BaseConnector {
-    override async requestChatCompletion(messages: ChatMessage[], generationOptions: GenerationOptions): Promise<ChatCompletionResult> {
+    override async requestChatCompletion(messages: ChatMessage[], generationOptions: GenerationOptions, requestOptions: RequestOptions): Promise<ChatCompletionResult> {
         // convert message format to openai format
         const openAiMessages = messages
             .map(m => this.convertToOpenAiMessage(m))
             .filter(m => m !== null) as TogetherAIChatMessage[];
 
+        requestOptions.updatesEmitter?.sendUpdate("Requesting completion from TogetherAI...")
         const response = await this.sendRequest({
             ...generationOptions,
             messages: openAiMessages

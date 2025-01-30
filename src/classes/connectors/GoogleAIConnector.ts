@@ -1,11 +1,13 @@
 // classes/connector/GoogleAIConnector.ts
 
-import BaseConnector, { ChatCompletionResult, ChatMessage, GenerationOptions } from "./BaseConnector";
+import BaseConnector, { ChatCompletionResult, ChatMessage, GenerationOptions, RequestOptions } from "./BaseConnector";
 
 export default class GoogleAIConnector extends BaseConnector {
-    override async requestChatCompletion(messages: ChatMessage[], generationOptions: GenerationOptions): Promise<ChatCompletionResult> {
+    override async requestChatCompletion(messages: ChatMessage[], generationOptions: GenerationOptions, requestOptions: RequestOptions): Promise<ChatCompletionResult> {
+        requestOptions.updatesEmitter?.sendUpdate("Formatting messages for Google AI...")
         const googleAIMessages = await this.formatMessages(messages);
         const systemInstruction = messages.find(m => m.role === "system")?.content;
+        requestOptions.updatesEmitter?.sendUpdate("Requesting completion from Google AI...")
         const response = await this.sendRequest(googleAIMessages, {
             ...generationOptions,
             system_instruction: { parts: [{ text: systemInstruction }] }
