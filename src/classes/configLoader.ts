@@ -30,6 +30,9 @@ export class ConfigLoader {
         if (typeof config.hey.enabled !== "boolean") {
             throw new Error("hey.enabled must be a boolean");
         }
+        if (typeof config.hey.ignoreNonMentionReplies !== "boolean") {
+            throw new Error("hey.ignoreNonMentionReplies must be a boolean");
+        }
         if (typeof config.hey.triggers !== "object" || config.hey.triggers === null) {
             throw new Error("hey.triggers must be an object");
         }
@@ -222,6 +225,7 @@ export interface Config {
 
 export interface HeyConfiguration {
     enabled: boolean;
+    ignoreNonMentionReplies: boolean;
     triggers: Record<string, HeyTrigger>;
 }
 

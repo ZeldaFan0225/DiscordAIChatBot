@@ -7,6 +7,7 @@
     ],
     "hey": {
         "enabled": true,
+        "ignoreNonMentionReplies": true,
         "triggers": {
             "hey gpt": {
                 "model": "gpt-4o-mini",
