@@ -35,7 +35,7 @@ export default class OpenAIConnector extends BaseConnector {
         };
     }
 
-    private async passesModeration(messages: OpenAiChatMessage[]): Promise<boolean> {
+    protected async passesModeration(messages: OpenAiChatMessage[]): Promise<boolean> {
         const latestMessage = messages.at(-1)
         if(latestMessage?.role !== "user") return true;
 
@@ -60,7 +60,7 @@ export default class OpenAIConnector extends BaseConnector {
         return !data?.results?.[0]?.flagged
     }
 
-    private async sendRequest(payload: OpenAiCompatiblePayload): Promise<OpenAiCompatibleResponse> {
+    protected async sendRequest(payload: OpenAiCompatiblePayload): Promise<OpenAiCompatibleResponse> {
         const result = await fetch(this.connectionOptions.url, {
             method: "POST",
             headers: {
@@ -77,7 +77,7 @@ export default class OpenAIConnector extends BaseConnector {
         return response as OpenAiCompatibleResponse;
     }
 
-    private convertToOpenAiMessage(message: ChatMessage): OpenAiChatMessage | null {
+    convertToOpenAiMessage(message: ChatMessage): OpenAiChatMessage | null {
         // IDE is crying but typescript isn't, idfk what is wrong with it
         // @ts-ignore
         const openAiMessage: OpenAiChatMessage = {
@@ -127,6 +127,15 @@ interface OpenAiCompatiblePayload {
     temperature?: number;
     top_p?: number;
     user?: string;
+    tools?: {
+        type: "function";
+        function: {
+            description: string;
+            name: string;
+            parameters: Record<string, any>;
+        };
+    }[];
+    tool_choice?: "auto" | "none" | string;
 }
 
 interface OpenAiCompatibleResponse {
@@ -147,7 +156,13 @@ interface OpenAiCompatibleResponse {
     }
 }
 
-type OpenAiChatMessage = OpenAiUserMessage | OpenAiBotMessage |OpenAiSystemMessage
+export type OpenAiChatMessage = OpenAiUserMessage | OpenAiBotMessage | OpenAiSystemMessage | OpenAiToolMessage
+
+interface OpenAiToolMessage extends OpenAiBaseMessage {
+    role: "tool";
+    content: string;
+    tool_call_id: string;
+}
 
 interface OpenAiBaseMessage {
     role: string;
@@ -163,18 +178,26 @@ interface OpenAiUserMessage extends OpenAiBaseMessage {
     })[]
 }
 
-interface OpenAiBotMessage extends OpenAiBaseMessage {
+export interface OpenAiBotMessage extends OpenAiBaseMessage {
     role: "assistant";
-    content: string,
+    content: string;
     audio?: {
-        expires_at: number,
-        transcript: string,
-        data: string,
-        id: string
-    }
+        expires_at: number;
+        transcript: string;
+        data: string;
+        id: string;
+    };
+    tool_calls?: {
+        id: string;
+        type: "function";
+        function: {
+            name: string;
+            arguments: string;
+        };
+    }[];
 }
 
 interface OpenAiSystemMessage extends OpenAiBaseMessage {
-    role: "system";
+    role: "system" | "developer";
     content: string
 }
