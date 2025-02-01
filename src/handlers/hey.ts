@@ -18,6 +18,7 @@ export async function handleHey(message: Message, client: DiscordBotClient) {
     const content = message.content.slice(message.content.toLowerCase().startsWith(triggerName) ? triggerName.length : 0).trim();
     if(!content) return;
     let responseMessage = await message.reply("⌛ ...")
+    await message.react(triggerData.processingEmoji || "⌛");
 
     const modelConfig = client.config.modelConfigurations[triggerData.model];
     if(!modelConfig) {
@@ -28,6 +29,7 @@ export async function handleHey(message: Message, client: DiscordBotClient) {
 
     const connector = client.connectorInstances[modelConfig.connector];
     if(!connector) {
+        if(!message.channel.isDMBased()) await message.reactions.removeAll();
         await responseMessage.delete();
         console.error(`Invalid connector ${modelConfig.connector}`);
         return;
@@ -35,6 +37,7 @@ export async function handleHey(message: Message, client: DiscordBotClient) {
 
     const systemInstruction = client.config.systemInstructions[triggerData.systemInstruction || modelConfig.defaultSystemInstructionName || "default"];
     if(!systemInstruction) {
+        if(!message.channel.isDMBased()) await message.reactions.removeAll();
         await responseMessage.delete();
         console.error(`Invalid system instruction ${triggerData.systemInstruction || modelConfig.defaultSystemInstructionName}`);
         return;
@@ -79,10 +82,13 @@ export async function handleHey(message: Message, client: DiscordBotClient) {
     updatesEmitter.removeAllListeners(UpdateEmitterEvents.UPDATE);
 
     if(!completion) {
+        if(!message.channel.isDMBased()) await message.reactions.removeAll();
         await responseMessage?.delete();
         console.error("Failed to get completion");
         return;
     }
+
+    if(!message.channel.isDMBased()) await message.reactions.removeAll();
 
     let completedMessage = completion.resultMessage.content;
 
