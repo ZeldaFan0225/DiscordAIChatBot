@@ -118,7 +118,8 @@ export default class extends Command {
             const attachment = new AttachmentBuilder(Buffer.from(completion.resultMessage.content), {name: "response.txt"});
             files.push(attachment)
             payload = {
-                files
+                files,
+                content: null
             }
         } else {
             payload = {

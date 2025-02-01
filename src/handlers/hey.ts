@@ -1,8 +1,8 @@
 import { AttachmentBuilder, Message } from "discord.js";
 import { DiscordBotClient } from "../classes/client";
 import { ChatMessage } from "../classes/connectors/BaseConnector";
-import { HeyMessageData } from "../types";
 import { UpdateEmitterEvents, UpdatesEmitter } from "../classes/updatesEmitter";
+import { HeyMessageData } from "../types";
 
 export async function handleHey(message: Message, client: DiscordBotClient) {
     const {triggerName, history} = await getHeyData(client, message);
@@ -107,7 +107,7 @@ export async function handleHey(message: Message, client: DiscordBotClient) {
         files.push(attachment);
         payload = {
             files,
-            allowedMentions: {repliedUser: false}
+            allowedMentions: {repliedUser: false},
         }
     } else {
         payload = {
@@ -118,6 +118,8 @@ export async function handleHey(message: Message, client: DiscordBotClient) {
     }
 
     if(updateMessage) {
+        // Trust me :D
+        if(!payload.content) payload.content = null!;
         await updateMessage.edit(payload);
         responseMessage = updateMessage;
     } else {
