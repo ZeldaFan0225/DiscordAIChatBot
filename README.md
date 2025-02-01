@@ -88,6 +88,7 @@ Create `config.json` from template:
     "user_blacklist": [],
     "hey": {
         "enabled": true,
+        "ignoreNonMentionReplies": true,
         "triggers": {
             "hey gpt": {
                 "model": "gpt-4o-mini",
