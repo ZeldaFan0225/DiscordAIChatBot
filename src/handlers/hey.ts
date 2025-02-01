@@ -9,28 +9,33 @@ export async function handleHey(message: Message, client: DiscordBotClient) {
     if(!triggerName) return;
     const triggerData = client.config.hey.triggers[triggerName];
     if(!triggerData) return;
+    if (
+        client.config.hey.ignoreNonMentionReplies &&
+        message.mentions.repliedUser?.id === client.user!.id &&
+        !message.mentions.users.has(client.user!.id)
+    ) return;
 
     const content = message.content.slice(message.content.toLowerCase().startsWith(triggerName) ? triggerName.length : 0).trim();
     if(!content) return;
-    await message.react(triggerData.processingEmoji || "⌛");
+    let responseMessage = await message.reply("⌛ ...")
 
     const modelConfig = client.config.modelConfigurations[triggerData.model];
     if(!modelConfig) {
-        if(!message.channel.isDMBased()) await message.reactions.removeAll();
+        await responseMessage.delete();
         console.error(`Invalid model ${triggerData.model}`);
         return;
     }
 
     const connector = client.connectorInstances[modelConfig.connector];
     if(!connector) {
-        if(!message.channel.isDMBased()) await message.reactions.removeAll();
+        await responseMessage.delete();
         console.error(`Invalid connector ${modelConfig.connector}`);
         return;
     }
 
     const systemInstruction = client.config.systemInstructions[triggerData.systemInstruction || modelConfig.defaultSystemInstructionName || "default"];
     if(!systemInstruction) {
-        if(!message.channel.isDMBased()) await message.reactions.removeAll();
+        await responseMessage.delete();
         console.error(`Invalid system instruction ${triggerData.systemInstruction || modelConfig.defaultSystemInstructionName}`);
         return;
     }
@@ -58,10 +63,8 @@ export async function handleHey(message: Message, client: DiscordBotClient) {
     });
 
     const updatesEmitter = new UpdatesEmitter();
-    let updateMessage: Message | undefined;
     updatesEmitter.on(UpdateEmitterEvents.UPDATE, async (text) => {
-        if(updateMessage) updateMessage.edit({content: `⌛ ${text}`});
-        else updateMessage = await message.reply({content: `⌛ ${text}`});
+        responseMessage.edit({content: `⌛ ${text}`});
     });
 
     const completion = await connector.requestChatCompletion(
@@ -76,17 +79,12 @@ export async function handleHey(message: Message, client: DiscordBotClient) {
     updatesEmitter.removeAllListeners(UpdateEmitterEvents.UPDATE);
 
     if(!completion) {
-        if(!message.channel.isDMBased()) await message.reactions.removeAll();
-        await updateMessage?.delete();
+        await responseMessage?.delete();
         console.error("Failed to get completion");
         return;
     }
-    console.info("Completion: ", completion);
-
-    if(!message.channel.isDMBased()) await message.reactions.removeAll();
 
     let completedMessage = completion.resultMessage.content;
-    let responseMessage;
 
     const files = await Promise.allSettled(
         (completion.resultMessage.attachments || [])
@@ -108,6 +106,7 @@ export async function handleHey(message: Message, client: DiscordBotClient) {
         payload = {
             files,
             allowedMentions: {repliedUser: false},
+            content: null
         }
     } else {
         payload = {
@@ -117,14 +116,7 @@ export async function handleHey(message: Message, client: DiscordBotClient) {
         }
     }
 
-    if(updateMessage) {
-        // Trust me :D
-        if(!payload.content) payload.content = null!;
-        await updateMessage.edit(payload);
-        responseMessage = updateMessage;
-    } else {
-        responseMessage = await message.reply(payload);
-    }
+    await responseMessage.edit(payload);
 
     await saveHeyCompletion(content, completion.resultMessage.content, triggerName, responseMessage.id, message.author.id, history.at(-1)?.message_id);
 }
