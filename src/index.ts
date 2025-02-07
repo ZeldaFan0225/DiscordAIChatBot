@@ -9,6 +9,7 @@ import {ActivityType, ApplicationCommandType, InteractionType, Partials, Presenc
 import handleMessage from "./handlers/message";
 import { Pool } from "pg";
 import BaseConnector from "./classes/connectors/BaseConnector";
+import BaseTool from "./classes/tools/BaseTool";
 
 if (process.env['NODE_ENV'] !== 'production') {
     const RE_INI_KEY_VAL = /^\s*([\w.-]+)\s*=\s*(.*)?\s*$/
@@ -34,7 +35,8 @@ const client = new DiscordBotClient({
 })
 
 client.login(process.env["DISCORD_TOKEN"])
-BaseConnector.client = client
+BaseConnector.client = client;
+BaseTool.client = client;
 
 
 client.on("ready", async () => {

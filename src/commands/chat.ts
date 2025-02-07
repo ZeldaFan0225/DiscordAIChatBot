@@ -140,14 +140,14 @@ export default class extends Command {
                 const models = Object.entries(context.client.config.modelConfigurations);
                 const filtered = models.filter(([name, {displayName}]) => name.toLowerCase().includes(focus.value.toLowerCase()) || displayName.toLowerCase().includes(focus.value.toLowerCase()));
                 return await context.interaction.respond(
-                    filtered.map(([name, {displayName}]) => ({name: displayName || name, value: name}))
+                    filtered.map(([name, {displayName}]) => ({name: displayName || name, value: name})).slice(0, 25)
                 )
             }
             case "system_instruction": {
                 const instructions = Object.keys(context.client.config.systemInstructions);
                 const filtered = instructions.filter((name) => name.toLowerCase().includes(focus.value.toLowerCase()));
                 return await context.interaction.respond(
-                    filtered.map((name) => ({name, value: name}))
+                    filtered.map((name) => ({name, value: name})).slice(0, 25)
                 )
             }
         }

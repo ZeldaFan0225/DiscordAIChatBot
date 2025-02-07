@@ -31,13 +31,6 @@
                 "apiKey": "OPENAI_KEY"
             }
         },
-        "WolframOpenAIConnector": {
-            "class": "classes/connectors/WolframOpenAIConnector",
-            "connectionOptions": {
-                "url": "https://api.openai.com/v1/chat/completions",
-                "apiKey": "OPENAI_KEY"
-            }
-        },
         "WolframConnector": {
             "class": "classes/connectors/WolframConnector",
             "connectionOptions": {
@@ -70,9 +63,59 @@
                 "url": "https://generativelanguage.googleapis.com/v1beta",
                 "apiKey": "GOOGLE_AI_KEY"
             }
+        },
+        "ToolsOpenAIConnector": {
+            "class": "classes/connectors/ToolsOpenAIConnector",
+            "connectionOptions": {
+                "url": "https://api.openai.com/v1/chat/completions",
+                "apiKey": "OPENAI_KEY",
+                "tools": ["SearxingTool", "WolframTool"]
+            }
+        },
+        "ToolsAnthropicConnector": {
+            "class": "classes/connectors/ToolsAnthropicConnector",
+            "connectionOptions": {
+                "url": "https://api.anthropic.com/v1/messages",
+                "apiKey": "ANTHROPIC_KEY",
+                "tools": ["SearxingTool", "WolframTool"]
+            }
+        }
+    },
+    "toolConfigurations": {
+        "SearxingTool": {
+            "class": "classes/tools/SearxingTool"
+        },
+        "WolframTool": {
+            "class": "classes/tools/WolframTool"
         }
     },
     "modelConfigurations": {
+        "OpenAI-MultiTool": {
+            "connector": "ToolsOpenAIConnector",
+            "displayName": "OpenAI-MultiTool",
+            "defaultSystemInstructionName": "default",
+            "systemInstructionAllowed": true,
+            "images": {
+                "supported": false
+            },
+            "generationOptions": {
+                "model": "o3-mini",
+                "reasoning_effort": "low"
+            }
+        },
+        "Claude-MultiTool": {
+            "connector": "ToolsAnthropicConnector",
+            "displayName": "Claude-MultiTool",
+            "defaultSystemInstructionName": "default",
+            "systemInstructionAllowed": true,
+            "images": {
+                "supported": true
+            },
+            "generationOptions": {
+                "model": "claude-3-5-sonnet-20241022",
+                "max_tokens": 4096
+            }
+        },
         "o1-preview": {
             "connector": "OpenAIConnector",
             "displayName": "o1 preview",
@@ -98,18 +141,6 @@
         "gpt-4o-mini": {
             "connector": "OpenAIConnector",
             "displayName": "GPT-4o Mini",
-            "defaultSystemInstructionName": "default",
-            "systemInstructionAllowed": true,
-            "images": {
-                "supported": true
-            },
-            "generationOptions": {
-                "model": "gpt-4o-mini"
-            }
-        },
-        "wolfram-gpt-4o-mini": {
-            "connector": "WolframOpenAIConnector",
-            "displayName": "GPT-4o Mini with Wolfram",
             "defaultSystemInstructionName": "default",
             "systemInstructionAllowed": true,
             "images": {

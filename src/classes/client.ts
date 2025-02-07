@@ -33,6 +33,10 @@ export class DiscordBotClient extends Client {
 		return this.#configLoader.connectorInstances
 	}
 
+	get toolInstances() {
+		return this.#configLoader.toolInstances
+	}
+
     loadConfig() {
 		return this.#configLoader.loadConfig()
     }

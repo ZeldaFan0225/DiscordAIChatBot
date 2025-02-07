@@ -1,4 +1,4 @@
-import {Colors, EmbedBuilder, ModalSubmitInteraction} from "discord.js";
+import {Colors, EmbedBuilder, MessageFlags, ModalSubmitInteraction} from "discord.js";
 import { BaseContext } from "./baseContext";
 import {ModalContextInitOptions} from "../types";
 
@@ -16,6 +16,6 @@ export class ModalContext extends BaseContext {
             description: `❌ **Error** | ${(options.codeblock ?? true) ? `\`${err_string}\`` : err_string}`
         })
         if(this.interaction.replied || this.interaction.deferred) return await this.interaction.editReply({embeds: [embed], content: null})
-        else return await this.interaction.reply({embeds: [embed], ephemeral: options.ephemeral ?? true})
+        else return await this.interaction.reply({embeds: [embed], flags: options.ephemeral ? MessageFlags.Ephemeral : undefined})
     }
 }

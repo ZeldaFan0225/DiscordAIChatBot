@@ -7,6 +7,7 @@ import {
     EmbedBuilder,
     MentionableSelectMenuInteraction,
     MessageComponentType,
+    MessageFlags,
     RoleSelectMenuInteraction,
     StringSelectMenuInteraction,
     UserSelectMenuInteraction
@@ -40,6 +41,6 @@ export class ComponentContext<T extends MessageComponentType> extends BaseContex
             description: `❌ **Error** | ${(options.codeblock ?? true) ? `\`${err_string}\`` : err_string}`
         })
         if(this.interaction.replied || this.interaction.deferred) return await this.interaction.editReply({embeds: [embed], content: null})
-        else return await this.interaction.reply({embeds: [embed], ephemeral: options.ephemeral ?? true})
+        else return await this.interaction.reply({embeds: [embed], flags: options.ephemeral ? MessageFlags.Ephemeral : undefined})
     }
 }

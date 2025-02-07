@@ -7,6 +7,11 @@ export default abstract class BaseConnector {
     constructor(options: ConnectionOptions) {
         this.#connectionOptions = options;
     }
+    get availableTools() {
+        return this.#connectionOptions.tools?.map(tool => {
+            return BaseConnector.client.toolInstances[tool]!
+        }) || []
+    }
     get connectionOptions() {
         return this.#connectionOptions;
     }
@@ -24,6 +29,7 @@ export interface ChatCompletionResult {
 export interface ConnectionOptions {
     url: string;
     apiKey: string;
+    tools?: string[];
 }
 
 export interface RequestOptions {

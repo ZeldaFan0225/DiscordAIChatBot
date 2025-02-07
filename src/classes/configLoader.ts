@@ -1,10 +1,12 @@
 import {readFileSync} from "fs";
 import BaseConnector, { ConnectionOptions, GenerationOptions } from "./connectors/BaseConnector";
+import BaseTool from "./tools/BaseTool";
 import { join } from "path";
 
 export class ConfigLoader {
     static #config: Config;
     static #connectors: Record<string, BaseConnector> = {};
+    static #tools: Record<string, BaseTool> = {};
     static {
         ConfigLoader.loadConfig();
     }
@@ -15,6 +17,10 @@ export class ConfigLoader {
 
     static get connectorInstances(): Record<string, BaseConnector> {
         return ConfigLoader.#connectors;
+    }
+
+    static get toolInstances(): Record<string, BaseTool> {
+        return ConfigLoader.#tools;
     }
 
     static validateConfig(config: any): asserts config is Config {
@@ -105,6 +111,16 @@ export class ConfigLoader {
             throw new Error("systemInstructions must contain a default instruction");
         }
 
+        // Validate toolConfigurations
+        if (typeof config.toolConfigurations !== "object" || config.toolConfigurations === null) {
+            throw new Error("toolConfigurations must be an object");
+        }
+        for (const [name, toolConfig] of Object.entries(config.toolConfigurations) as [string, ToolConfiguration][]) {
+            if (typeof toolConfig.class !== "string") {
+                throw new Error(`toolConfigurations.${name}.class must be a string`);
+            }
+        }
+
         // Validate connectorConfigurations
         if (typeof config.connectorConfigurations !== "object" || config.connectorConfigurations === null) {
             throw new Error("connectorConfigurations must be an object");
@@ -115,6 +131,21 @@ export class ConfigLoader {
             }
             if (typeof connectorConfig.connectionOptions !== "object" || connectorConfig.connectionOptions === null) {
                 throw new Error(`connectorConfigurations.${name}.connectionOptions must be an object`);
+            }
+            
+            // Validate tools if provided
+            if (connectorConfig.connectionOptions.tools !== undefined) {
+                if (!Array.isArray(connectorConfig.connectionOptions.tools)) {
+                    throw new Error(`connectorConfigurations.${name}.connectionOptions.tools must be an array if provided`);
+                }
+                for (const toolName of connectorConfig.connectionOptions.tools) {
+                    if (typeof toolName !== "string") {
+                        throw new Error(`connectorConfigurations.${name}.connectionOptions.tools must contain only strings`);
+                    }
+                    if (!config.toolConfigurations[toolName]) {
+                        throw new Error(`Connector ${name} references non-existent tool: ${toolName}`);
+                    }
+                }
             }
         }
 
@@ -182,13 +213,15 @@ export class ConfigLoader {
         }
         ConfigLoader.#config = config;
 
+        // Load tools first which are then used by connectors
+        this.loadTools();
         this.loadConnectors();
         console.info("Loaded config");
         return config;
     }
 
     private static loadConnectors() {
-        const connectors: Record<string, BaseConnector> = {}
+        const connectors: Record<string, BaseConnector> = {};
         for(const [connectorName, connectorData] of Object.entries(ConfigLoader.#config.connectorConfigurations)) {
             try {
                 const path = join(process.cwd(), "dist", connectorData.class);
@@ -203,8 +236,24 @@ export class ConfigLoader {
         }
         this.#connectors = connectors;
     }
-}
 
+    private static loadTools() {
+        const tools: Record<string, BaseTool> = {};
+        for(const [toolName, toolData] of Object.entries(ConfigLoader.#config.toolConfigurations)) {
+            try {
+                const path = join(process.cwd(), "dist", toolData.class);
+                delete require.cache[require.resolve(path)];
+                const toolClass = require(path).default;
+                const tool = new toolClass();
+                tools[toolName] = tool;
+                console.info(`Loaded tool ${toolName}`);
+            } catch (e) {
+                throw new Error(`Unable to load tool ${toolName}: ${(e as Error).message}`);
+            }
+        }
+        this.#tools = tools;
+    }
+}
 
 export interface Config {
     staff_roles: string[];
@@ -220,7 +269,8 @@ export interface Config {
     },
     systemInstructions: Record<string, string>;
     connectorConfigurations: Record<string, ConnectorConfiguration>;
-    modelConfigurations: Record<string, ModelConfiguration>
+    toolConfigurations: Record<string, ToolConfiguration>;
+    modelConfigurations: Record<string, ModelConfiguration>;
 }
 
 export interface HeyConfiguration {
@@ -239,6 +289,10 @@ export interface HeyTrigger {
 export interface ConnectorConfiguration {
     class: string;
     connectionOptions: ConnectionOptions;
+}
+
+export interface ToolConfiguration {
+    class: string;
 }
 
 export interface ModelConfiguration {

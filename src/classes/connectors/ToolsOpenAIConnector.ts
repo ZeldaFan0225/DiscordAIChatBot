@@ -1,6 +1,10 @@
-import BaseConnector, {ChatCompletionResult, ChatMessage, ChatMessageRoles, GenerationOptions, RequestOptions} from "./BaseConnector";
+import BaseConnector, {ChatCompletionResult, ChatMessage, ConnectionOptions, GenerationOptions, RequestOptions} from "./BaseConnector";
 
-export default class WolframOpenAIConnector extends BaseConnector {
+export default class ToolsOpenAIConnector extends BaseConnector {
+    constructor(options: ConnectionOptions) {
+        super(options);
+    }
+
     override async requestChatCompletion(messages: ChatMessage[], generationOptions: GenerationOptions, requestOptions: RequestOptions): Promise<ChatCompletionResult> {
         // convert message format to openai format
         const openAiMessages = messages
@@ -26,37 +30,28 @@ export default class WolframOpenAIConnector extends BaseConnector {
             ...generationOptions,
             messages,
             tool_choice: depth === 0 ? "none" : "auto",
-            tools: [{
+            tools: this.availableTools.map(tool => ({
                 type: "function",
-                function: {
-                    description: "An accurate tool to give exact results for a given query. More scientifically accurate than any large language model.",
-                    name: "wolfram-alpha",
-                    parameters: {
-                        type: "object",
-                        properties: {
-                            query: {
-                                type: "string",
-                                description: "The query to search for"
-                            }
-                        },
-                        required: ["query"]
-                    }
-                }
-            }]
+                function: tool.toOpenAiToolDefinition()
+            }))
         })
 
-        const toolCalls = response.choices[0]!.message.tool_calls?.filter(call => call.function.name === "wolfram-alpha")
+        const toolCalls = response.choices[0]!.message.tool_calls
         if(!toolCalls?.length) return response.choices[0]!.message;
 
         messages.push(response.choices[0]!.message)
 
-        requestOptions.updatesEmitter?.sendUpdate("Computing with Wolfram Alpha...")
+        requestOptions.updatesEmitter?.sendUpdate("Processing tool calls...")
         for(const toolCall of toolCalls) {
-            const wolframResponse = await this.requestWolfram(toolCall.function.arguments)
+            const tool = this.availableTools.find(t => t.name === toolCall.function.name)
+            if(!tool) continue;
+
+            requestOptions.updatesEmitter?.sendUpdate(`Executing tool: ${tool.name}...`)
+            const toolResponse = await tool.handleToolCall(JSON.parse(toolCall.function.arguments))
 
             messages.push({
                 role: "tool",
-                content: wolframResponse,
+                content: JSON.stringify(toolResponse),
                 tool_call_id: toolCall.id
             })
         }
@@ -114,7 +109,7 @@ export default class WolframOpenAIConnector extends BaseConnector {
             role: message.role,
             name: message.name
         }
-        if(message.role === ChatMessageRoles.USER) {
+        if(message.role === "user") {
             if(message.attachments) {
                 const imageUrls: {type: "image_url", image_url: {url: string}}[] = message.attachments.map(url => ({
                     type: "image_url" as const,
@@ -127,25 +122,6 @@ export default class WolframOpenAIConnector extends BaseConnector {
             }
         }
         return openAiMessage;
-    }
-
-    private async requestWolfram(prompt: string): Promise<string> {
-        const parameters = new URLSearchParams({
-            appid: process.env["WOLFRAM_ALPHA_ID"]!,
-            input: prompt,
-            format: "plaintext",
-            includepodid: "Result",
-            units: "metric",
-            output: "JSON"
-        })
-
-        const request = await fetch(`https://api.wolframalpha.com/v2/query?${parameters.toString()}`)
-            .then(res => res.text())
-            .catch(console.error)
-
-        const res = request || "Unable to query result"
-
-        return res;
     }
 }
 
@@ -162,9 +138,12 @@ interface OpenAIModerationResponse {
 interface OpenAiCompatiblePayload {
     messages: OpenAiChatMessage[];
     model: string;
+    reasoning_effort?: "low" | "medium" | "high";
     frequency_penalty?: number;
     logit_bias?: Record<string, number>;
+    /** @deprecated */
     max_tokens?: number;
+    max_completion_tokens?: number;
     presence_penalty?: number;
     response_format?:  {type: "text" | "json_object"};
     seed?: number;
@@ -177,7 +156,7 @@ interface OpenAiCompatiblePayload {
         function: {
             description: string,
             name: string,
-            parameters: Record<string, any>
+            parameters?: Record<string, any>
         }
     }[]
 }

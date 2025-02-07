@@ -2,7 +2,6 @@ import BaseConnector, {ChatCompletionResult, ChatMessage, ChatMessageRoles, Gene
 
 export default class AnthropicConnector extends BaseConnector {
     async requestChatCompletion(messages: ChatMessage[], generationOptions: GenerationOptions, requestOptions: RequestOptions): Promise<ChatCompletionResult> {
-        console.info(`AnthropicConnector: Requesting chat completion with messages: `, messages);
         requestOptions.updatesEmitter?.sendUpdate("Formatting messages for Claude...")
         const sytemInstruction = messages.find(m => m.role === ChatMessageRoles.SYSTEM)?.content;
         requestOptions.updatesEmitter?.sendUpdate("Requesting completion from Claude...")
