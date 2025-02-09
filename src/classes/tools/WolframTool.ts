@@ -18,7 +18,7 @@ export default class WolframTool extends BaseTool {
         });
     }
 
-    async handleToolCall(parameters: ToolCallData): Promise<string> {
+    async handleToolCall(parameters: ToolCallData) {
         const queryParams = new URLSearchParams({
             appid: process.env["WOLFRAM_ALPHA_ID"]!,
             input: parameters["query"],
@@ -35,6 +35,6 @@ export default class WolframTool extends BaseTool {
                 return "Unable to compute result";
             });
 
-        return response || "No result found";
+        return {result: response || "No result found", attachments: [`data:application/json;base64,${Buffer.from(response).toString('base64')}`]};
     }
 }

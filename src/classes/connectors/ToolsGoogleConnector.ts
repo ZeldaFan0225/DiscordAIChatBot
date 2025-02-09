@@ -2,8 +2,11 @@ import BaseConnector, { ChatCompletionResult, ChatMessage, GenerationOptions, Re
 import { ToolDefinition } from "../tools/BaseTool";
 
 export default class ToolsGoogleConnector extends BaseConnector {
+    private collectedAttachments: any[] = [];
+
     override async requestChatCompletion(messages: ChatMessage[], generationOptions: GenerationOptions, requestOptions: RequestOptions): Promise<ChatCompletionResult> {
         requestOptions.updatesEmitter?.sendUpdate("Formatting messages for Google AI...")
+        this.collectedAttachments = []; // Reset attachments for new request
         const googleAIMessages = await this.formatMessages(messages);
         const systemInstruction = messages.find(m => m.role === "system")?.content;
 
@@ -12,7 +15,8 @@ export default class ToolsGoogleConnector extends BaseConnector {
         return {
             resultMessage: {
                 role: "assistant",
-                content: response.content
+                content: response.content,
+                attachments: this.collectedAttachments
             }
         };
     }
@@ -36,32 +40,72 @@ export default class ToolsGoogleConnector extends BaseConnector {
             throw new Error("Failed to get response from Google AI", { cause: response });
         }
 
-        let responseContent = "";
-        let hasToolCalls = false;
+        // Extract text content and function calls
+        const textContent = result.parts
+            .filter((part): part is Required<Pick<GoogleAIMessagePart, "text">> => 
+                typeof part.text === "string"
+            )
+            .map(part => part.text)
+            .join("");
 
-        for (const part of result.parts) {
-            if (part.text) {
-                responseContent += part.text;
-            } else if (part.functionCall && depth > 0) {
-                hasToolCalls = true;
-                const tool = this.availableTools.find(t => t.name === part.functionCall?.name);
-                if (tool) {
-                    requestOptions.updatesEmitter?.sendUpdate(`Executing tool: ${tool.name}...`);
-                    const toolResponse = await tool.handleToolCall(part.functionCall.args);
-                    responseContent += `\n\nTool Result (${tool.name}):\n${JSON.stringify(toolResponse)}`;
+        const functionCalls = result.parts
+            .filter((part): part is Required<Pick<GoogleAIMessagePart, "functionCall">> => 
+                part.functionCall !== undefined && depth > 0
+            )
+            .map(part => part.functionCall);
+
+        // If no function calls or reached max depth, return the text content
+        if (!functionCalls.length || depth === 0) {
+            return { content: textContent };
+        }
+
+        // Add assistant's message with complete response
+        messages.push({
+            role: "model",
+            parts: result.parts
+        });
+
+        // Process function calls and collect responses
+        const functionResponseParts: GoogleAIMessagePart[] = [];
+        for (const functionCall of functionCalls) {
+            const tool = this.availableTools.find(t => t.name === functionCall.name);
+            if (tool) {
+                requestOptions.updatesEmitter?.sendUpdate(`Executing tool: ${tool.name}...`);
+                try {
+                    const toolResponse = await tool.handleToolCall(functionCall.args);
+                    if (toolResponse.attachments) {
+                        this.collectedAttachments.push(...toolResponse.attachments);
+                    }
+                    functionResponseParts.push({
+                        functionResponse: {
+                            name: tool.name,
+                            response: { 
+                                result: toolResponse.result,
+                                status: "success"
+                            }
+                        }
+                    });
+                } catch (error) {
+                    functionResponseParts.push({
+                        functionResponse: {
+                            name: tool.name,
+                            response: {
+                                error: error instanceof Error ? error.message : String(error),
+                                status: "error"
+                            }
+                        }
+                    });
                 }
             }
         }
 
-        if (!hasToolCalls || depth === 0) {
-            return { content: responseContent };
-        }
-
+        // Add function responses to message history
         messages.push({
-            role: "model",
-            parts: [{ text: responseContent }]
+            role: "user",
+            parts: functionResponseParts
         });
 
+        // Continue the conversation with function responses
         return this.executeToolCall(messages, systemInstruction, generationOptions, requestOptions, depth - 1);
     }
 
@@ -106,6 +150,11 @@ export default class ToolsGoogleConnector extends BaseConnector {
         return result;
     }
 
+    /**
+     * Format input attachments to Google AI format
+     * @param attachments 
+     * @returns 
+     */
     private async formatAttachments(attachments: string[]) {
         let result: GoogleAIMessagePart[] = [];
         for (const attachment of attachments) {
@@ -122,6 +171,11 @@ export default class ToolsGoogleConnector extends BaseConnector {
         return result
     }
 
+    /**
+     * Get base64 data from URL
+     * @param url The source URL
+     * @returns 
+     */
     private async getBase64FromUrl(url: string): Promise<string> {
         const response = await fetch(url);
         const contentType = response.headers.get('content-type') || 'application/octet-stream';
@@ -145,6 +199,14 @@ interface GoogleAIMessagePart {
         name: string;
         args: Record<string, any>;
     };
+    functionResponse?: {
+        name: string;
+        response: {
+            result?: any;
+            error?: string;
+            status: "success" | "error";
+        };
+    };
 }
 
 interface GoogleAIResponse {
@@ -158,7 +220,7 @@ interface GoogleAIResponse {
 
 interface GoogleAIRequestOptions extends GenerationOptions {
     system_instruction?: {
-        parts: { text: string }[];
+        parts: GoogleAIMessagePart[];
     };
     tools?: {
         function_declarations: ToolDefinition[];

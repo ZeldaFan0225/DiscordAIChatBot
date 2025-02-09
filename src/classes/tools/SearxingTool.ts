@@ -18,7 +18,7 @@ export default class SearxingTool extends BaseTool {
         });
     }
 
-    async handleToolCall(parameters: ToolCallData): Promise<{title: string, url: string, content: string}[]> {
+    async handleToolCall(parameters: ToolCallData) {
         const searchParams = new URLSearchParams({
             q: parameters["query"],
             format: "json"
@@ -27,10 +27,13 @@ export default class SearxingTool extends BaseTool {
         const data = await fetch(`${process.env["SEARXING_ORIGIN"]}/search?${searchParams.toString()}`)
             .then(res => res.json());
 
-        return data.results.slice(0, 5).map((result: any) => ({
-            title: result.title,
-            url: result.url,
-            content: result.content
-        }));
+        return {
+            result: data.results.slice(0, 5).map((result: any) => ({
+                title: result.title,
+                url: result.url,
+                content: result.content
+            })),
+            attachments: [`data:application/json;base64,${Buffer.from(JSON.stringify(data)).toString('base64')}`]
+        };
     }
 }

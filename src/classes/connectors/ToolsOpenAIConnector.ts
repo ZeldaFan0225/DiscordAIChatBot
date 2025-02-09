@@ -1,11 +1,16 @@
 import BaseConnector, {ChatCompletionResult, ChatMessage, ConnectionOptions, GenerationOptions, RequestOptions} from "./BaseConnector";
 
 export default class ToolsOpenAIConnector extends BaseConnector {
+    private collectedAttachments: any[] = [];
+
     constructor(options: ConnectionOptions) {
         super(options);
     }
 
     override async requestChatCompletion(messages: ChatMessage[], generationOptions: GenerationOptions, requestOptions: RequestOptions): Promise<ChatCompletionResult> {
+        // Reset attachments for new request
+        this.collectedAttachments = [];
+
         // convert message format to openai format
         const openAiMessages = messages
             .map(m => this.convertToOpenAiMessage(m))
@@ -20,7 +25,10 @@ export default class ToolsOpenAIConnector extends BaseConnector {
         const response = await this.executeToolCall(openAiMessages, generationOptions, requestOptions)
 
         return {
-            resultMessage: response
+            resultMessage: {
+                ...response,
+                attachments: this.collectedAttachments
+            }
         };
     }
 
@@ -49,9 +57,13 @@ export default class ToolsOpenAIConnector extends BaseConnector {
             requestOptions.updatesEmitter?.sendUpdate(`Executing tool: ${tool.name}...`)
             const toolResponse = await tool.handleToolCall(JSON.parse(toolCall.function.arguments))
 
+            if (toolResponse.attachments) {
+                this.collectedAttachments.push(...toolResponse.attachments);
+            }
+
             messages.push({
                 role: "tool",
-                content: JSON.stringify(toolResponse),
+                content: JSON.stringify(toolResponse.result),
                 tool_call_id: toolCall.id
             })
         }
@@ -102,8 +114,6 @@ export default class ToolsOpenAIConnector extends BaseConnector {
     }
 
     private convertToOpenAiMessage(message: ChatMessage): OpenAiChatMessage | null {
-        // IDE is crying but typescript isn't, idfk what is wrong with it
-        // @ts-ignore
         const openAiMessage: OpenAiChatMessage = {
             content: message.content,
             role: message.role,

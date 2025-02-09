@@ -9,7 +9,7 @@ export default abstract class BaseTool {
         this.name = definition.name;
     }
 
-    abstract handleToolCall(parameters: ToolCallData): Promise<any>;
+    abstract handleToolCall(parameters: ToolCallData): Promise<ToolResponse>;
 
     public toOpenAiToolDefinition(): OpenAiToolDefinition {
         return {
@@ -31,6 +31,12 @@ export default abstract class BaseTool {
     public toGoogleToolDefinition(): ToolDefinition {
         return this.#definition;
     }
+}
+
+export interface ToolResponse {
+    result: any;
+    /** Base64 or fetchable URL */
+    attachments?: string[];
 }
 
 export interface ToolDefinition {

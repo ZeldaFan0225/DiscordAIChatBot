@@ -1,22 +1,35 @@
 import BaseConnector, { ChatCompletionResult, ChatMessage, ChatMessageRoles, GenerationOptions, RequestOptions } from "./BaseConnector";
+import { AnthropicToolDefinition } from "../tools/BaseTool";
 
 export default class ToolsAnthropicConnector extends BaseConnector {
+    private collectedAttachments: any[] = [];
+
     async requestChatCompletion(messages: ChatMessage[], generationOptions: GenerationOptions, requestOptions: RequestOptions): Promise<ChatCompletionResult> {
         requestOptions.updatesEmitter?.sendUpdate("Formatting messages for Claude...")
         const systemInstruction = messages.find(m => m.role === ChatMessageRoles.SYSTEM)?.content;
 
+        this.collectedAttachments = []; // Reset attachments for new request
         const response = await this.executeToolCall(await this.formatMessages(messages), systemInstruction, generationOptions, requestOptions);
 
         return {
             resultMessage: {
                 role: ChatMessageRoles.ASSISTANT,
-                content: response.content
+                content: response.content,
+                attachments: this.collectedAttachments
             }
         };
     }
 
     private async executeToolCall(messages: ClaudeMessage[], systemInstruction: string | undefined, generationOptions: GenerationOptions, requestOptions: RequestOptions, depth = 5): Promise<{ content: string }> {
         requestOptions.updatesEmitter?.sendUpdate("Requesting completion from Claude...");
+        const payload: AnthropicPayload = {
+            messages,
+            max_tokens: 4096,
+            system: systemInstruction,
+            ...generationOptions,
+            tools: depth === 0 ? undefined : this.availableTools.map(tool => tool.toAnthropicToolDefinition())
+        };
+
         const response = await fetch(this.connectionOptions.url, {
             method: "POST",
             headers: {
@@ -24,47 +37,70 @@ export default class ToolsAnthropicConnector extends BaseConnector {
                 "x-api-key": process.env[this.connectionOptions.apiKey]!,
                 "anthropic-version": "2023-06-01"
             },
-            body: JSON.stringify({
-                messages,
-                system: systemInstruction,
-                ...generationOptions,
-                tools: depth === 0 ? undefined : this.availableTools.map(tool => tool.toAnthropicToolDefinition())
-            })
+            body: JSON.stringify(payload)
         });
 
-        const data = await response.json();
+        const data = await response.json() as AnthropicResponse;
         
-        if (!data || !data.content?.length) {
+        if (!data?.content?.length) {
             throw new Error("Failed to get response from Anthropic API", { cause: data });
         }
 
-        let responseContent = "";
-        let hasToolCalls = false;
+        const toolCalls = data.content.filter((item): item is Extract<AnthropicResponse["content"][number], { type: "tool_use" }> => 
+            item.type === "tool_use" && depth > 0
+        );
+        const textContent = data.content
+            .filter((item): item is Extract<AnthropicResponse["content"][number], { type: "text" }> => 
+                item.type === "text"
+            )
+            .map(item => item.text)
+            .join("");
 
-        // Process each content item
-        for (const item of data.content) {
-            if (item.type === "text") {
-                responseContent += item.text;
-            } else if (item.type === "tool_use" && depth > 0) {
-                hasToolCalls = true;
-                const tool = this.availableTools.find(t => t.name === item.name);
-                if (tool) {
-                    requestOptions.updatesEmitter?.sendUpdate(`Executing tool: ${tool.name}...`);
-                    const toolResponse = await tool.handleToolCall(item.input);
-                    responseContent += `\n\nTool Result (${tool.name}):\n${JSON.stringify(toolResponse)}`;
+        // If no tool calls or reached max depth, return the text content
+        if (!toolCalls.length || depth === 0) {
+            return { content: textContent };
+        }
+
+        // Add assistant's message with both text and tool calls
+        messages.push({
+            role: "assistant",
+            content: data.content
+        });
+
+        // Process tool calls and collect results
+        const toolResults: ClaudeMessage["content"] = [];
+        for (const toolCall of toolCalls) {
+            const tool = this.availableTools.find(t => t.name === toolCall.name);
+            if (tool) {
+                requestOptions.updatesEmitter?.sendUpdate(`Executing tool: ${tool.name}...`);
+                try {
+                    const toolResponse = await tool.handleToolCall(toolCall.input);
+                    if (toolResponse.attachments) {
+                        this.collectedAttachments.push(...toolResponse.attachments);
+                    }
+                    toolResults.push({
+                        type: "tool_result",
+                        tool_use_id: toolCall.id,
+                        content: JSON.stringify(toolResponse.result)
+                    });
+                } catch (error) {
+                    toolResults.push({
+                        type: "tool_result",
+                        tool_use_id: toolCall.id,
+                        is_error: true,
+                        content: error instanceof Error ? error.message : String(error)
+                    });
                 }
             }
         }
 
-        if (!hasToolCalls || depth === 0) {
-            return { content: responseContent };
-        }
-
+        // Add tool results to message history
         messages.push({
-            role: "assistant",
-            content: [{ type: "text", text: responseContent }]
+            role: "user",
+            content: toolResults
         });
 
+        // Continue the conversation with tool results
         return this.executeToolCall(messages, systemInstruction, generationOptions, requestOptions, depth - 1);
     }
 
@@ -105,6 +141,11 @@ export default class ToolsAnthropicConnector extends BaseConnector {
         return result;
     }
 
+    /**
+     * Converts a URL to a base64 string (user input to claude required format)
+     * @param url The source URL
+     * @returns 
+     */
     private getBase64FromUrl(url: string): Promise<string> {
         return new Promise((resolve, reject) => {
             fetch(url)
@@ -126,7 +167,7 @@ export const ClaudeAllowedMediaTypes = Object.freeze({
 
 interface ClaudeMessage {
     role: typeof ChatMessageRoles[keyof typeof ChatMessageRoles];
-    content: (
+    content: string | (
         {
             type: "text",
             text: string
@@ -139,8 +180,61 @@ interface ClaudeMessage {
             }
         } | {
             type: "tool_use",
+            id: string,
             name: string,
-            input: Record<string, any>
+            input: Record<string, any>,
+        } | {
+            type: "tool_result",
+            tool_use_id: string,
+            is_error?: boolean,
+            content?: string
         }
     )[]
+}
+
+interface AnthropicPayload {
+    model: string,
+    messages: ClaudeMessage[],
+    max_tokens: number,
+    metadata?: {
+        user_id: string | null
+    },
+    stop_sequences?: string[],
+    system?: string,
+    temperature?: number,
+    tool_choice?: {
+        type: "auto" | "any",
+        disable_parallel_tool_use?: boolean
+    } | {
+        type: "tool",
+        name: string,
+        disable_parallel_tool_use?: boolean
+    },
+    tools?: AnthropicToolDefinition[],
+    top_k?: number,
+    top_p?: number
+}
+
+interface AnthropicResponse {
+    id: string,
+    type: "message",
+    role: "assistant",
+    content: ({
+        type: "text",
+        text: string
+    } | {
+        type: "tool_use",
+        id: string,
+        name: string,
+        input: Record<string, any>,
+    })[],
+    model: string,
+    stop_reason: "end_turn" | "max_tokens" | "stop_sequence" | "tool_use" | null,
+    stop_sequence: string | null,
+    usage: {
+        input_tokens: number,
+        cache_creation_input_tokens: number | null,
+        cache_read_input_tokens: number | null,
+        output_tokens: number,
+    }
 }
