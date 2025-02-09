@@ -32,8 +32,7 @@ export default class SearxingTool extends BaseTool {
                 title: result.title,
                 url: result.url,
                 content: result.content
-            })),
-            attachments: [`data:application/json;base64,${Buffer.from(JSON.stringify(data)).toString('base64')}`]
+            }))
         };
     }
 }

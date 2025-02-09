@@ -35,6 +35,6 @@ export default class WolframTool extends BaseTool {
                 return "Unable to compute result";
             });
 
-        return {result: response || "No result found", attachments: [`data:application/json;base64,${Buffer.from(response).toString('base64')}`]};
+        return {result: response || "No result found"};
     }
 }
