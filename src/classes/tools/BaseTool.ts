@@ -27,6 +27,10 @@ export default abstract class BaseTool {
             input_schema: this.#definition.parameters
         }
     }
+
+    public toGoogleToolDefinition(): ToolDefinition {
+        return this.#definition;
+    }
 }
 
 export interface ToolDefinition {
