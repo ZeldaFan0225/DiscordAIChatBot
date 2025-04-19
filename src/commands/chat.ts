@@ -1,11 +1,12 @@
+import { ApplicationIntegrationType, AttachmentBuilder, BufferResolvable, InteractionContextType, SlashCommandBuilder } from "discord.js";
+import { FormData, fetch } from "undici";
+import { AutocompleteContext } from "../classes/autocompleteContext";
+import { DiscordBotClient } from "../classes/client";
 import { Command } from "../classes/command";
 import { CommandContext } from "../classes/commandContext";
-import { AutocompleteContext } from "../classes/autocompleteContext";
-import { ApplicationIntegrationType, AttachmentBuilder, InteractionContextType, SlashCommandBuilder } from "discord.js";
-import { DiscordBotClient } from "../classes/client";
-import { ChatMessageData } from "../types";
 import { ChatMessage } from "../classes/connectors/BaseConnector";
 import { UpdateEmitterEvents, UpdatesEmitter } from "../classes/updatesEmitter";
+import { ChatMessageData } from "../types";
 
 
 const command_data = new SlashCommandBuilder()
@@ -64,13 +65,22 @@ export default class extends Command {
         const systemInstructionName = ctx.interaction.options.getString("system_instruction", false);
         const image = ctx.interaction.options.getAttachment("image");
 
-        if(!modelConfig) return await ctx.error({error: "Invalid model"});
+        if (!modelConfig) return await ctx.error({ error: "Invalid model" });
 
         const connector = ctx.client.connectorInstances[modelConfig.connector];
-        if(!connector) return await ctx.error({error: "Invalid connector"});
+        if (!connector) return await ctx.error({ error: "Invalid connector" });
         const systemInstruction = ctx.client.config.systemInstructions[systemInstructionName || modelConfig.defaultSystemInstructionName || "default"];
 
-        await ctx.interaction.deferReply();
+        //await ctx.interaction.deferReply();
+        await fetch("https://discord.com/api/v10/interactions/" + ctx.interaction.id + "/" + ctx.interaction.token + "/callback", {
+            method: "POST",
+            body: JSON.stringify({
+                type: 5
+            }),
+            headers: {
+                "Content-Type": "application/json",
+            }
+        }).catch(console.error)
 
         const messages: ChatMessage[] = [{
             role: "user",
@@ -78,13 +88,14 @@ export default class extends Command {
             attachments: image && modelConfig.images.supported ? [image.url] : []
         }];
 
-        if(systemInstruction && modelConfig.systemInstructionAllowed !== false) {
-            messages.unshift({role: "system", content: systemInstruction});
+        if (systemInstruction && modelConfig.systemInstructionAllowed !== false) {
+            messages.unshift({ role: "system", content: systemInstruction });
         }
 
         const updatesEmitter = new UpdatesEmitter();
         updatesEmitter.on(UpdateEmitterEvents.UPDATE, (text) => {
-            ctx.interaction.editReply({content: `⌛ ${text}`});
+            sendMessageUpdate(ctx, `⌛ ${text}`).catch(console.error);
+            //ctx.interaction.editReply({content: `⌛ ${text}`});
         });
 
         const completion = await connector.requestChatCompletion(
@@ -98,56 +109,41 @@ export default class extends Command {
 
         updatesEmitter.removeAllListeners(UpdateEmitterEvents.UPDATE);
 
-        if(!completion) return await ctx.error({error: "Failed to get completion"});
+        if (!completion) return await ctx.error({ error: "Failed to get completion" });
 
-        let payload;
         const files = await Promise.allSettled(
             (completion.resultMessage.attachments || [])
                 .map((a, i) => DiscordBotClient.convertToAttachmentBuilder(a, `attachment-${i}`))
         ).then(res => res.filter(r => r.status === "fulfilled").map(r => r.value));
 
-        if(completion.resultMessage.audio_data_string) {
+        if (completion.resultMessage.audio_data_string) {
             const [contentType, data] = completion.resultMessage.audio_data_string.slice(5).split(";base64,");
-            if(contentType && data)  {
-                const attachment = new AttachmentBuilder(Buffer.from(data, "base64"), {name: `response.${contentType.split("/")[1]}`});
+            if (contentType && data) {
+                const attachment = new AttachmentBuilder(Buffer.from(data, "base64"), { name: `response.${contentType.split("/")[1]}` });
                 files.unshift(attachment)
             }
         }
+        console.log(completion)
+        let resultId = await sendMessageUpdate(ctx, completion.resultMessage.content, files);
 
-        if(completion.resultMessage.content.length > 2000) {
-            const attachment = new AttachmentBuilder(Buffer.from(completion.resultMessage.content), {name: "response.txt"});
-            files.push(attachment)
-            payload = {
-                files,
-                content: null
-            }
-        } else {
-            payload = {
-                content: completion.resultMessage.content,
-                files
-            }
-        }
-
-        const result = await ctx.interaction.editReply(payload);
-
-        saveChatCompletion(message, completion.resultMessage.content, model, systemInstructionName || modelConfig.defaultSystemInstructionName || "default", result.id, ctx.interaction.user.id);
+        saveChatCompletion(message, completion.resultMessage.content, model, systemInstructionName || modelConfig.defaultSystemInstructionName || "default", resultId, ctx.interaction.user.id);
     }
 
     override async autocomplete(context: AutocompleteContext): Promise<any> {
         const focus = context.interaction.options.getFocused(true);
-        switch(focus.name) {
+        switch (focus.name) {
             case "model": {
                 const models = Object.entries(context.client.config.modelConfigurations);
-                const filtered = models.filter(([name, {displayName}]) => name.toLowerCase().includes(focus.value.toLowerCase()) || displayName.toLowerCase().includes(focus.value.toLowerCase()));
+                const filtered = models.filter(([name, { displayName }]) => name.toLowerCase().includes(focus.value.toLowerCase()) || displayName.toLowerCase().includes(focus.value.toLowerCase()));
                 return await context.interaction.respond(
-                    filtered.map(([name, {displayName}]) => ({name: displayName || name, value: name})).slice(0, 25)
+                    filtered.map(([name, { displayName }]) => ({ name: displayName || name, value: name })).slice(0, 25)
                 )
             }
             case "system_instruction": {
                 const instructions = Object.keys(context.client.config.systemInstructions);
                 const filtered = instructions.filter((name) => name.toLowerCase().includes(focus.value.toLowerCase()));
                 return await context.interaction.respond(
-                    filtered.map((name) => ({name, value: name})).slice(0, 25)
+                    filtered.map((name) => ({ name, value: name })).slice(0, 25)
                 )
             }
         }
@@ -162,13 +158,13 @@ export async function saveChatCompletion(userContent: string, assistantResponse:
 }
 
 export async function hasChatMessage(messageId: string) {
-    const {rows} = await DiscordBotClient.db.query("SELECT * FROM chat_messages WHERE message_id = $1", [messageId]);
+    const { rows } = await DiscordBotClient.db.query("SELECT * FROM chat_messages WHERE message_id = $1", [messageId]);
     return rows.length > 0;
 }
 
 export async function getChatHistory(messageId: string) {
-    const {rows} = await DiscordBotClient.db.query<ChatMessageData>(
-`WITH RECURSIVE message_hierarchy AS (
+    const { rows } = await DiscordBotClient.db.query<ChatMessageData>(
+        `WITH RECURSIVE message_hierarchy AS (
     SELECT
         index,
         message_id,
@@ -206,4 +202,72 @@ FROM
         [messageId]
     );
     return rows;
+}
+
+export async function sendMessageUpdate(context: CommandContext, content?: string, attachments?: AttachmentBuilder[]): Promise<string> {
+    const form = new FormData()
+    const components: any[] = []
+    const files: { id: number, fileName: string, content: BufferResolvable, contentType: string }[] = []
+
+    if ((content?.length || 0) > 4000) {
+        const fileName = `response-${Date.now()}.txt`
+        components.push({
+            type: 10,
+            content: "Response attached as a file."
+        }, {
+            type: 13,
+            file: {
+                url: `attachment://${fileName}`
+            }
+        })
+        files.push({
+            id: 0,
+            fileName,
+            content: content || "[No content]",
+            contentType: "text/plain"
+        })
+    } else {
+        components.push({
+            type: 10,
+            content: content || "[No content]"
+        })
+    }
+
+    attachments?.forEach((attachment) => {
+        files.push({
+            id: files.length,
+            fileName: attachment.name!,
+            content: attachment.attachment as BufferResolvable,
+            contentType: "application/octet-stream"
+        })
+        components.push({
+            type: 13,
+            file: {
+                url: `attachment://${attachment.name}`
+            }
+        })
+    })
+
+    form.append("payload_json", JSON.stringify(
+        {
+            flags: 1 << 15,
+            components: [{
+                type: 17,
+                components
+            }],
+            attachments: files.map((file) => ({
+                id: file.id,
+                filename: file.fileName,
+            })),
+        }
+    ))
+    for (const file of files) {
+        form.append(`files[${file.id}]`, new Blob([file.content], { type: file.contentType }), file.fileName)
+    }
+
+    const res = await fetch("https://discord.com/api/v10/webhooks/" + context.client.user!.id + "/" + context.interaction.token + "/messages/@original", {
+        method: "PATCH",
+        body: form
+    }).then(res => res.json())
+    return (res as { id: string }).id
 }

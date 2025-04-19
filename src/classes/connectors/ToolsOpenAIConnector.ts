@@ -24,10 +24,17 @@ export default class ToolsOpenAIConnector extends BaseConnector {
         requestOptions.updatesEmitter?.sendUpdate("Message passed moderation check")
         const response = await this.executeToolCall(openAiMessages, generationOptions, requestOptions)
 
+        if (response.audio) {
+            if (!response.content) {
+                response.content = response.audio.transcript;
+            }
+        }
+
         return {
             resultMessage: {
                 ...response,
-                attachments: this.collectedAttachments
+                attachments: this.collectedAttachments,
+                audio_data_string: response.audio?.data ? `data:audio/${generationOptions["audio"]?.["format"]};base64,${response.audio.data}` : undefined
             }
         };
     }
@@ -208,6 +215,12 @@ interface OpenAiUserMessage extends OpenAiBaseMessage {
 interface OpenAiBotMessage extends OpenAiBaseMessage {
     role: "assistant";
     content: string;
+    audio?: {
+        expires_at: number;
+        transcript: string;
+        data: string;
+        id: string;
+    };
     tool_calls?: {
         id: string,
         type: "function",
