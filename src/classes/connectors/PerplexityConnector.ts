@@ -84,6 +84,22 @@ export default class PerplexityConnector extends BaseConnector {
             result.content = content;
         }
 
+        // Prepend "-# " to each line inside <think>...</think> blocks
+        if (typeof result.content === "string") {
+            result.content = result.content.replace(
+                /<think>([\s\S]*?)<\/think>/g,
+                (_: string, p1: string) => {
+                    const processed = p1
+                        .split(/\r?\n/)
+                        .map((line: string) => line.trim() ? `-# ${line}` : "")
+                        .join("\n");
+                    return `\n${processed}\n`;
+                }
+            );
+        }
+
+        result.content = result.content.trim()
+
         return {
             resultMessage: result
         };
@@ -100,7 +116,6 @@ export default class PerplexityConnector extends BaseConnector {
         });
 
         const response = await result.json();
-        console.log("Perplexity response:", response);
 
         if (response.error) throw new Error("Perplexity Error", { cause: response });
 
