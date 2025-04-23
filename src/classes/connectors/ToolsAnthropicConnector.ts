@@ -74,7 +74,7 @@ export default class ToolsAnthropicConnector extends BaseConnector {
             if (tool) {
                 requestOptions.updatesEmitter?.sendUpdate(`Executing tool: ${tool.name}...`);
                 try {
-                    const toolResponse = await tool.handleToolCall(toolCall.input);
+                    const toolResponse = await tool.handleToolCall(toolCall.input, requestOptions.userId);
                     if (toolResponse.attachments) {
                         this.collectedAttachments.push(...toolResponse.attachments);
                     }

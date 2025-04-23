@@ -62,7 +62,7 @@ export default class ToolsOpenAIConnector extends BaseConnector {
             if(!tool) continue;
 
             requestOptions.updatesEmitter?.sendUpdate(`Executing tool: ${tool.name}...`)
-            const toolResponse = await tool.handleToolCall(JSON.parse(toolCall.function.arguments))
+            const toolResponse = await tool.handleToolCall(JSON.parse(toolCall.function.arguments), requestOptions.userId)
 
             if (toolResponse.attachments) {
                 this.collectedAttachments.push(...toolResponse.attachments);

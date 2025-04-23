@@ -9,7 +9,7 @@ export default abstract class BaseTool {
         this.name = definition.name;
     }
 
-    abstract handleToolCall(parameters: ToolCallData): Promise<ToolResponse>;
+    abstract handleToolCall(parameters: ToolCallData, userId?: string): Promise<ToolResponse>;
 
     public toOpenAiToolDefinition(): OpenAiToolDefinition {
         return {

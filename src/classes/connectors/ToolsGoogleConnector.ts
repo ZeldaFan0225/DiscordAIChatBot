@@ -72,7 +72,7 @@ export default class ToolsGoogleConnector extends BaseConnector {
             if (tool) {
                 requestOptions.updatesEmitter?.sendUpdate(`Executing tool: ${tool.name}...`);
                 try {
-                    const toolResponse = await tool.handleToolCall(functionCall.args);
+                    const toolResponse = await tool.handleToolCall(functionCall.args, requestOptions.userId);
                     if (toolResponse.attachments) {
                         this.collectedAttachments.push(...toolResponse.attachments);
                     }
