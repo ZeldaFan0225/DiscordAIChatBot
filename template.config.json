@@ -14,7 +14,8 @@
                 "model": "gpt-4o-mini",
                 "processingEmoji": "1094321943517335642",
                 "systemInstruction": "default",
-                "previousMessagesContext": 5
+                "previousMessagesContext": 5,
+                "allowNonHistoryReplyContext": true
             }
         }
     },
