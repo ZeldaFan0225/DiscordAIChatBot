@@ -8,6 +8,7 @@
     "hey": {
         "enabled": true,
         "ignoreNonMentionReplies": true,
+        "allowReplyContext": true,
         "triggers": {
             "hey gpt": {
                 "model": "gpt-4o-mini",

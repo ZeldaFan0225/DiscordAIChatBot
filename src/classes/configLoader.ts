@@ -55,6 +55,9 @@ export class ConfigLoader {
             if (triggerConfig.previousMessagesContext !== undefined && typeof triggerConfig.previousMessagesContext !== "number") {
                 throw new Error(`hey.triggers.${trigger}.previousMessagesContext must be a number if provided`);
             }
+            if(triggerConfig.allowNonHistoryReplyContext !== undefined && typeof triggerConfig.allowNonHistoryReplyContext !== "boolean") {
+                throw new Error(`hey.triggers.${trigger}.allowNonHistoryReplyContext must be a boolean if provided`);
+            }
 
             // Cross validate model exists
             if (!config.modelConfigurations[triggerConfig.model]) {
@@ -284,6 +287,7 @@ export interface HeyTrigger {
     processingEmoji?: string;
     systemInstruction?: string;
     previousMessagesContext?: number;
+    allowNonHistoryReplyContext?: boolean;
 }
 
 export interface ConnectorConfiguration {

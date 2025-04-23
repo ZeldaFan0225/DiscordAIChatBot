@@ -15,8 +15,13 @@ export async function handleHey(message: Message, client: DiscordBotClient) {
         !message.mentions.users.has(client.user!.id)
     ) return;
 
-    const content = message.content.slice(message.content.toLowerCase().startsWith(triggerName) ? triggerName.length : 0).trim();
+    let content = message.content.slice(message.content.toLowerCase().startsWith(triggerName) ? triggerName.length : 0).trim();
     if(!content) return;
+    if(triggerData.allowNonHistoryReplyContext && !history.length) {
+        const contextContent = await message.fetchReference().then(m => m.content).catch(() => null);
+        content = `Context message:\n${contextContent}\n\nUser Prompt:\n${content}`;
+    }
+    console.log(content)
     let responseMessage = await message.reply("⌛ ...")
     await message.react(triggerData.processingEmoji || "⌛");
 
