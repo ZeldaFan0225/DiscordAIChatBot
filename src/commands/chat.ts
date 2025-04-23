@@ -123,7 +123,7 @@ export default class extends Command {
                 files.unshift(attachment)
             }
         }
-        console.log(completion)
+        
         let resultId = await sendMessageUpdate(ctx, completion.resultMessage.content, files);
 
         saveChatCompletion(message, completion.resultMessage.content, model, systemInstructionName || modelConfig.defaultSystemInstructionName || "default", resultId, ctx.interaction.user.id);
@@ -253,6 +253,7 @@ export async function sendMessageUpdate(context: CommandContext, content?: strin
             flags: 1 << 15,
             components: [{
                 type: 17,
+                accent_color: 0x5865f2,
                 components
             }],
             attachments: files.map((file) => ({
