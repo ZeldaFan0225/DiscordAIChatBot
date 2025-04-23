@@ -233,6 +233,7 @@ export async function sendMessageUpdate(context: CommandContext, content?: strin
         })
     }
 
+    const mediaCaruselFiles: AttachmentBuilder[] = []
     attachments?.forEach((attachment) => {
         files.push({
             id: files.length,
@@ -240,13 +241,29 @@ export async function sendMessageUpdate(context: CommandContext, content?: strin
             content: attachment.attachment as BufferResolvable,
             contentType: "application/octet-stream"
         })
-        components.push({
-            type: 13,
-            file: {
-                url: `attachment://${attachment.name}`
-            }
-        })
+        if(/^[\w\s\-]+\.(jpg|jpeg|png|gif|webp)$/i.test(attachment.name!)) {
+            mediaCaruselFiles.push(attachment)
+        } else {
+            components.push({
+                type: 13,
+                file: {
+                    url: `attachment://${attachment.name}`
+                }
+            })
+        }
     })
+
+    if(mediaCaruselFiles.length) {
+        components.push({
+            type: 12,
+            items: mediaCaruselFiles.map((attachment) => ({
+                media: {
+                    url: `attachment://${attachment.name}`
+                },
+                description: `Image: ${attachment.name}`
+            }))
+        })
+    }
 
     form.append("payload_json", JSON.stringify(
         {

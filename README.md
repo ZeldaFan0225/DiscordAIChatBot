@@ -63,76 +63,10 @@ npm install
 ```
 
 2. **Environment Setup**
-Create a `.env` file:
-```env
-DISCORD_TOKEN=your_discord_bot_token
-DB_NAME=your_database_name
-DB_USERNAME=your_database_user
-DB_PASSWORD=your_database_password
-DB_IP=localhost
-DB_PORT=5432
-OPENAI_KEY=your_openai_key
-ANTHROPIC_KEY=your_anthropic_key
-GOOGLE_AI_KEY=your_google_ai_key
-TOGETHERAI_KEY=your_together_ai_key
-GROQ_KEY=your_groq_key
-WOLFRAM_ALPHA_ID=your_wolfram_api_key
-GITHUB_PAT=your_github_personal_access_token
-```
+Create a `.env` from template [`template.env`](./template.env)
 
 3. **Bot Configuration**
-Create `config.json` from template:
-```json
-{
-    "staff_roles": ["your_admin_role_id"],
-    "user_blacklist": [],
-    "hey": {
-        "enabled": true,
-        "ignoreNonMentionReplies": true,
-        "triggers": {
-            "hey gpt": {
-                "model": "gpt-4o-mini",
-                "systemInstruction": "default",
-                "previousMessagesContext": 5
-            }
-        }
-    },
-    "chat": {
-        "maxHistoryDepth": 5
-    },
-    "ask": {
-        "model": "gpt-4o-mini",
-        "systemInstruction": "default",
-        "initialPromptTemplate": "Take the following message:\n\n{{TARGET_MESSAGE_CONTENT}}\n\nWhat I need you to do:\n{{USER_PROMPT}}"
-    },
-    "systemInstructions": {
-        "default": "You are a helpful, lightweight AI assistant"
-    },
-    "connectorConfigurations": {
-        "OpenAIConnector": {
-            "class": "classes/connectors/OpenAIConnector",
-            "connectionOptions": {
-                "url": "https://api.openai.com/v1/chat/completions",
-                "apiKey": "OPENAI_KEY"
-            }
-        }
-    },
-    "modelConfigurations": {
-        "gpt-4o-mini": {
-            "connector": "OpenAIConnector",
-            "displayName": "GPT-4o Mini",
-            "defaultSystemInstructionName": "default",
-            "systemInstructionAllowed": true,
-            "images": {
-                "supported": true
-            },
-            "generationOptions": {
-                "model": "gpt-4o-mini"
-            }
-        }
-    }
-}
-```
+Create `config.json` from template [`template.config.json`](./template.config.json)
 
 4. **Database Setup**
 - Create a PostgreSQL database
