@@ -1,9 +1,8 @@
-import { AttachmentBuilder, Message } from "discord.js";
+import { Message, MessageFlags, TextDisplayBuilder } from "discord.js";
+import { DiscordBotClient } from "../classes/client";
 import { ChatMessage } from "../classes/connectors/BaseConnector";
 import { Modal } from "../classes/modal";
 import { ModalContext } from "../classes/modalContext";
-import { saveChatCompletion } from "../commands/chat";
-import { DiscordBotClient } from "../classes/client";
 import { UpdateEmitterEvents, UpdatesEmitter } from "../classes/updatesEmitter";
 
 export default class extends Modal {
@@ -16,36 +15,36 @@ export default class extends Modal {
     }
 
     override async run(ctx: ModalContext): Promise<any> {
-        const [,id] = ctx.interaction.customId.split("_");
+        const [, id] = ctx.interaction.customId.split("_");
         const message = ctx.interaction.fields.getTextInputValue("question");
 
         const targetMessage = ctx.client.cache.get(`ask_${id}`) as Message;
-        if (!targetMessage) return await ctx.error({ error: "Invalid message" });
+        if (!targetMessage) return await ctx.error({ error: "Invalid message", componentsV2: true });
         ctx.client.cache.delete(`ask_${id}`);
 
         const targetMessageContent = this.getMessageContent(targetMessage).trim();
-        if(!targetMessageContent) return await ctx.error({ error: "Message is empty" });
+        if (!targetMessageContent) return await ctx.error({ error: "Message is empty", componentsV2: true });
 
         const template = ctx.client.config.ask?.initialPromptTemplate || "Take the following message:\n\n{{TARGET_MESSAGE_CONTENT}}\n\nWhat I need you to do:\n{{USER_PROMPT}}";
         const prompt = template.replaceAll("{{TARGET_MESSAGE_CONTENT}}", targetMessageContent).replaceAll("{{USER_PROMPT}}", message)
 
         const modelName = ctx.client.config.ask?.model || "default";
         const modelConfig = ctx.client.config.modelConfigurations[modelName];
-        if(!modelConfig) return await ctx.error({error: "Invalid model"});
+        if (!modelConfig) return await ctx.error({ error: "Invalid model", componentsV2: true });
         const systemInstructionName = ctx.client.config.ask?.systemInstruction || modelConfig!.defaultSystemInstructionName;
 
-        if(!modelConfig) return await ctx.error({error: "Invalid model"});
+        if (!modelConfig) return await ctx.error({ error: "Invalid model", componentsV2: true });
 
         const connector = ctx.client.connectorInstances[modelConfig.connector];
-        if(!connector) return await ctx.error({error: "Invalid connector"});
+        if (!connector) return await ctx.error({ error: "Invalid connector", componentsV2: true });
         const systemInstruction = ctx.client.config.systemInstructions[systemInstructionName || modelConfig.defaultSystemInstructionName || "default"];
 
         await ctx.interaction.deferReply();
 
         const messages: ChatMessage[] = []
 
-        if(systemInstruction && modelConfig.systemInstructionAllowed !== false) {
-            messages.unshift({role: "system", content: systemInstruction});
+        if (systemInstruction && modelConfig.systemInstructionAllowed !== false) {
+            messages.unshift({ role: "system", content: systemInstruction });
         }
 
         messages.push({
@@ -55,7 +54,8 @@ export default class extends Modal {
 
         const updatesEmitter = new UpdatesEmitter();
         updatesEmitter.on(UpdateEmitterEvents.UPDATE, (text) => {
-            ctx.interaction.editReply({content: `⌛ ${text}`});
+            //@ts-ignore This typing is broken, but we need to ignore it for now
+            ctx.interaction.editReply({ components: [new TextDisplayBuilder({ content: `⌛ ${text}` })], flags: MessageFlags.IsComponentsV2 });
         });
 
         const completion = await connector.requestChatCompletion(
@@ -69,39 +69,14 @@ export default class extends Modal {
 
         updatesEmitter.removeAllListeners(UpdateEmitterEvents.UPDATE);
 
-        if(!completion) return await ctx.error({error: "Failed to get completion"});
+        if (!completion) return await ctx.error({ error: "Failed to get completion", componentsV2: true });
 
-        let payload;
-        const files = await Promise.allSettled(
-            (completion.resultMessage.attachments || [])
-                .map((a, i) => DiscordBotClient.convertToAttachmentBuilder(a, `attachment-${i}`))
-        ).then(res => res.filter(r => r.status === "fulfilled").map(r => r.value));
+        const { components, attachments } = await DiscordBotClient.constructMessage(completion);
 
-        if(completion.resultMessage.audio_data_string) {
-            const [contentType, data] = completion.resultMessage.audio_data_string.slice(5).split(";base64,");
-            if(contentType && data)  {
-                const attachment = new AttachmentBuilder(Buffer.from(data, "base64"), {name: `response.${contentType.split("/")[1]}`});
-                files.unshift(attachment)
-            }
-        }
+        // @ts-ignore This typing is currently broken, but we need to ignore it for now
+        const result = await ctx.interaction.editReply({ components, files: attachments, flags: MessageFlags.IsComponentsV2 })
 
-        if(completion.resultMessage.content.length > 2000) {
-            const attachment = new AttachmentBuilder(Buffer.from(completion.resultMessage.content), {name: "response.txt"});
-            files.push(attachment)
-            payload = {
-                files,
-                content: null
-            }
-        } else {
-            payload = {
-                content: completion.resultMessage.content,
-                files
-            }
-        }
-
-        const result = await ctx.interaction.editReply(payload);
-
-        saveChatCompletion(prompt, completion.resultMessage.content, modelName, systemInstructionName || modelConfig.defaultSystemInstructionName || "default", result.id, ctx.interaction.user.id);
+        ctx.client.saveChatCompletion(prompt, completion.resultMessage.content, modelName, systemInstructionName || modelConfig.defaultSystemInstructionName || "default", result.id, ctx.interaction.user.id);
     }
 
     getMessageContent(message: Message) {

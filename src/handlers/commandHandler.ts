@@ -16,7 +16,7 @@ export async function handleCommands(interaction: ChatInputCommandInteraction, c
             error: "Please add me to the private thread (by mentioning me) to use commands",
             ephemeral: true
         })*/
-    if(command.staff_only && !context.is_staff)
+    if(command.staff_only && !context.isStaff)
         return await context.error({
             error: "You are not staff"
         })

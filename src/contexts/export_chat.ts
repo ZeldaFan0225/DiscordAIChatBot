@@ -1,7 +1,7 @@
 import { ApplicationCommandType, AttachmentBuilder, ContextMenuCommandBuilder, MessageFlags } from "discord.js";
 import { Context } from "../classes/context";
 import { ContextContext } from "../classes/contextContext";
-import { getChatHistory, hasChatMessage } from "../commands/chat";
+import { ChatMessageData, HeyMessageData } from "../types";
 
 const command_data = new ContextMenuCommandBuilder()
     .setType(ApplicationCommandType.Message)
@@ -20,10 +20,19 @@ export default class extends Context {
 
     override async run(ctx: ContextContext<ApplicationCommandType.Message>): Promise<any> {
         const id = ctx.interaction.targetId;
-        const hasHistory = await hasChatMessage(id!);
-        if (!hasHistory) return await ctx.error({ error: "No chat message found" });
+        let history: (ChatMessageData | HeyMessageData)[] = [];
 
-        const history = (await getChatHistory(id!)).reverse();
+        let type = "unknown";
+        if(await ctx.client.hasChatMessage(id!)) {
+            history = await ctx.client.getChatHistory(id!);
+            type = "chat";
+        } else if(await ctx.client.hasHeyMessage(id!)) {
+            history = await ctx.client.getHeyHistory(id!);
+            type = "hey";
+        }
+        if (!history.length) return await ctx.error({ error: "No chat message found" });
+
+        history = history.reverse();
 
         let content = "";
         const dividor = "=".repeat(25);
@@ -35,6 +44,6 @@ export default class extends Context {
 
         const attachment = new AttachmentBuilder(Buffer.from(content.trim()), { name: `${id}.json` });
 
-        await ctx.interaction.reply({ content: "Here is the chat history", files: [attachment], flags: MessageFlags.Ephemeral });
+        await ctx.interaction.reply({ content: `Here is the ${type} history`, files: [attachment], flags: MessageFlags.Ephemeral });
     }
 }
