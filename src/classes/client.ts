@@ -89,12 +89,7 @@ export class DiscordBotClient extends Client {
         if ((content?.length || 0) > 4000) {
             const fileName = `response-${Date.now()}.txt`
             components.push(
-                new TextDisplayBuilder({ content: "Response attached as a file." }),
-                new FileBuilder({
-                    file: {
-                        url: `attachment://${fileName}`
-                    }
-                })
+                new TextDisplayBuilder({ content: "Response attached as a file." })
             )
 
             files.push(new AttachmentBuilder(Buffer.from(content || "[No Content]"), { name: fileName }))
