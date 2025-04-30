@@ -54,7 +54,6 @@ export default class extends Modal {
 
         const updatesEmitter = new UpdatesEmitter();
         updatesEmitter.on(UpdateEmitterEvents.UPDATE, (text) => {
-            //@ts-ignore This typing is broken, but we need to ignore it for now
             ctx.interaction.editReply({ components: [new TextDisplayBuilder({ content: `⌛ ${text}` })], flags: MessageFlags.IsComponentsV2 });
         });
 
@@ -73,7 +72,6 @@ export default class extends Modal {
 
         const { components, attachments } = await DiscordBotClient.constructMessage(completion);
 
-        // @ts-ignore This typing is currently broken, but we need to ignore it for now
         const result = await ctx.interaction.editReply({ components, files: attachments, flags: MessageFlags.IsComponentsV2 })
 
         ctx.client.saveChatCompletion(prompt, completion.resultMessage.content, modelName, systemInstructionName || modelConfig.defaultSystemInstructionName || "default", result.id, ctx.interaction.user.id);

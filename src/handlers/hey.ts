@@ -77,7 +77,6 @@ export async function handleHey(message: Message, client: DiscordBotClient) {
     updatesEmitter.on(UpdateEmitterEvents.UPDATE, async (text) => {
         responseMessage.edit({
             components: [new TextDisplayBuilder({ content: `⌛ ${text}` })],
-            // @ts-ignore This typing is currently broken
             flags: MessageFlags.IsComponentsV2
         });
     });
@@ -104,7 +103,6 @@ export async function handleHey(message: Message, client: DiscordBotClient) {
 
     const { components, attachments } = await DiscordBotClient.constructMessage(completion);
 
-    // @ts-ignore The typing is currently broken
     await responseMessage.edit({ components, files: attachments, flags: MessageFlags.IsComponentsV2, allowedMentions: { repliedUser: false } }).catch(console.error);
 
     await client.saveHeyCompletion(content, completion.resultMessage.content, triggerName, responseMessage.id, message.author.id, history.at(-1)?.message_id);

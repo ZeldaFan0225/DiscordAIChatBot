@@ -78,8 +78,6 @@ export default class OpenAIConnector extends BaseConnector {
     }
 
     convertToOpenAiMessage(message: ChatMessage): OpenAiChatMessage | null {
-        // IDE is crying but typescript isn't, idfk what is wrong with it
-        // @ts-ignore
         const openAiMessage: OpenAiChatMessage = {
             content: message.content,
             role: message.role,

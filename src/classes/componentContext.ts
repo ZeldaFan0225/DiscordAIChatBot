@@ -48,8 +48,6 @@ export class ComponentContext<T extends MessageComponentType> extends BaseContex
                 ],
                 accent_color: Colors.Red,
             })
-            // The typing here is currently broken, so we need to ignore it
-            // @ts-ignore
             if (this.interaction.deferred) return await this.interaction.editReply({ components: [container], flags: MessageFlags.IsComponentsV2 })
             else if (this.interaction.replied) return await this.interaction.editReply({ components: [container] })
             else return await this.interaction.reply({ components: [container], flags: (options.ephemeral ? MessageFlags.Ephemeral : 0) | MessageFlags.IsComponentsV2 })

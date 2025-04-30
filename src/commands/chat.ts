@@ -83,7 +83,6 @@ export default class extends Command {
 
         const updatesEmitter = new UpdatesEmitter();
         updatesEmitter.on(UpdateEmitterEvents.UPDATE, (text) => {
-            //@ts-ignore This typing is broken, but we need to ignore it for now
             ctx.interaction.editReply({ components: [new TextDisplayBuilder({ content: `⌛ ${text}` })], flags: MessageFlags.IsComponentsV2 });
         });
 
