@@ -2,11 +2,14 @@ import {readFileSync} from "fs";
 import BaseConnector, { ConnectionOptions, GenerationOptions } from "./connectors/BaseConnector";
 import BaseTool from "./tools/BaseTool";
 import { join } from "path";
+import { MCPManager } from "./mcp/MCPManager";
+import { MCPServerConfig } from "./mcp/MCPClient";
 
 export class ConfigLoader {
     static #config: Config;
     static #connectors: Record<string, BaseConnector> = {};
     static #tools: Record<string, BaseTool> = {};
+    static #mcpManager = MCPManager.getInstance();
     static {
         ConfigLoader.loadConfig();
     }
@@ -150,6 +153,48 @@ export class ConfigLoader {
                     }
                 }
             }
+            
+            // Validate MCP servers if provided
+            if (connectorConfig.connectionOptions.mcpServers !== undefined) {
+                if (!Array.isArray(connectorConfig.connectionOptions.mcpServers)) {
+                    throw new Error(`connectorConfigurations.${name}.connectionOptions.mcpServers must be an array if provided`);
+                }
+                for (const serverName of connectorConfig.connectionOptions.mcpServers) {
+                    if (typeof serverName !== "string") {
+                        throw new Error(`connectorConfigurations.${name}.connectionOptions.mcpServers must contain only strings`);
+                    }
+                    if (config.mcpServerConfigurations && !config.mcpServerConfigurations[serverName]) {
+                        throw new Error(`Connector ${name} references non-existent MCP server: ${serverName}`);
+                    }
+                }
+            }
+        }
+        
+        // Validate MCP server configurations if provided
+        if (config.mcpServerConfigurations !== undefined) {
+            if (typeof config.mcpServerConfigurations !== "object" || config.mcpServerConfigurations === null) {
+                throw new Error("mcpServerConfigurations must be an object if provided");
+            }
+            for (const [name, serverConfig] of Object.entries(config.mcpServerConfigurations) as [string, MCPServerConfig][]) {
+                if (typeof serverConfig.transportType !== "string" || !["stdio", "sse"].includes(serverConfig.transportType)) {
+                    throw new Error(`mcpServerConfigurations.${name}.transportType must be "stdio" or "sse"`);
+                }
+                if (serverConfig.transportType === "stdio") {
+                    if (typeof serverConfig.command !== "string") {
+                        throw new Error(`mcpServerConfigurations.${name}.command must be a string for stdio transport`);
+                    }
+                    if (serverConfig.args !== undefined && !Array.isArray(serverConfig.args)) {
+                        throw new Error(`mcpServerConfigurations.${name}.args must be an array if provided`);
+                    }
+                } else if (serverConfig.transportType === "sse") {
+                    if (typeof serverConfig.url !== "string") {
+                        throw new Error(`mcpServerConfigurations.${name}.url must be a string for SSE transport`);
+                    }
+                }
+                if (serverConfig.env !== undefined && (typeof serverConfig.env !== "object" || serverConfig.env === null)) {
+                    throw new Error(`mcpServerConfigurations.${name}.env must be an object if provided`);
+                }
+            }
         }
 
         // Validate modelConfigurations
@@ -216,7 +261,12 @@ export class ConfigLoader {
         }
         ConfigLoader.#config = config;
 
-        // Load tools first which are then used by connectors
+        // Load MCP servers first
+        this.loadMCPServers().catch(error => {
+            console.error("Failed to load some MCP servers:", error);
+        });
+        
+        // Load tools which are then used by connectors
         this.loadTools();
         this.loadConnectors();
         console.info("Loaded config");
@@ -256,6 +306,24 @@ export class ConfigLoader {
         }
         this.#tools = tools;
     }
+    
+    private static async loadMCPServers() {
+        if (!ConfigLoader.#config.mcpServerConfigurations) {
+            return;
+        }
+        
+        for (const [serverName, serverConfig] of Object.entries(ConfigLoader.#config.mcpServerConfigurations)) {
+            try {
+                await this.#mcpManager.initializeServer(serverName, serverConfig);
+            } catch (error) {
+                console.error(`Failed to initialize MCP server ${serverName}:`, error);
+            }
+        }
+    }
+    
+    static getMCPToolsForConnector(mcpServerNames: string[]): BaseTool[] {
+        return this.#mcpManager.getToolsForServers(mcpServerNames);
+    }
 }
 
 export interface Config {
@@ -274,6 +342,7 @@ export interface Config {
     connectorConfigurations: Record<string, ConnectorConfiguration>;
     toolConfigurations: Record<string, ToolConfiguration>;
     modelConfigurations: Record<string, ModelConfiguration>;
+    mcpServerConfigurations?: Record<string, MCPServerConfig>;
 }
 
 export interface HeyConfiguration {

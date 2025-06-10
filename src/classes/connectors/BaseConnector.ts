@@ -1,5 +1,6 @@
 import { DiscordBotClient } from "../client";
 import { UpdatesEmitter } from "../updatesEmitter";
+import { ConfigLoader } from "../configLoader";
 
 export default abstract class BaseConnector {
     #connectionOptions: ConnectionOptions;
@@ -8,9 +9,21 @@ export default abstract class BaseConnector {
         this.#connectionOptions = options;
     }
     get availableTools() {
-        return this.#connectionOptions.tools?.map(tool => {
-            return BaseConnector.client.toolInstances[tool]!
-        }) || []
+        const tools = [];
+        
+        // Add regular tools
+        if (this.#connectionOptions.tools) {
+            tools.push(...this.#connectionOptions.tools.map(tool => {
+                return BaseConnector.client.toolInstances[tool]!
+            }));
+        }
+        
+        // Add MCP tools
+        if (this.#connectionOptions.mcpServers) {
+            tools.push(...ConfigLoader.getMCPToolsForConnector(this.#connectionOptions.mcpServers));
+        }
+        
+        return tools;
     }
     get connectionOptions() {
         return this.#connectionOptions;
@@ -30,6 +43,7 @@ export interface ConnectionOptions {
     url: string;
     apiKey: string;
     tools?: string[];
+    mcpServers?: string[];
 }
 
 export interface RequestOptions {
