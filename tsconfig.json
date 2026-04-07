@@ -5,6 +5,7 @@
     "resolveJsonModule": true,
     "experimentalDecorators": true,
     "outDir": "dist",
+    "rootDir": "src",
     "strict": true,
     "noImplicitAny": true,
     "strictNullChecks": true,

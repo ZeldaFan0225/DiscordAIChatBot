@@ -62,6 +62,9 @@ client.on("interactionCreate", async (interaction) => {
                 case ApplicationCommandType.Message: {
                     return await handleContexts(interaction, client);
                 }
+                case ApplicationCommandType.PrimaryEntryPoint: {
+                    return;
+                }
             }
         };
         case InteractionType.MessageComponent: {
