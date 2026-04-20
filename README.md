@@ -20,6 +20,7 @@ A powerful, multi-provider Discord bot for AI interactions. Seamlessly integrate
   - Content moderation
   - Configurable system instructions
   - Passive listening with custom triggers
+  - MCP (Model Context Protocol) server integration
 
 - **Discord Integration**
   - Slash commands
@@ -52,6 +53,12 @@ A powerful, multi-provider Discord bot for AI interactions. Seamlessly integrate
    - Use Slash Commands
    - Add Reactions
    - Use External Emojis
+
+- **MCP Integration** 🔌
+  - Connect to MCP servers for extended capabilities
+  - Access external tools and resources
+  - Support for filesystem, GitHub, databases, and more
+  - See [MCP Integration Guide](./MCP_INTEGRATION.md) for details
 
 ## Quick Start 🚀
 

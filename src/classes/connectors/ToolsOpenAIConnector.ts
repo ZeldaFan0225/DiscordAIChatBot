@@ -1,4 +1,5 @@
 import BaseConnector, {ChatCompletionResult, ChatMessage, ConnectionOptions, GenerationOptions, RequestOptions} from "./BaseConnector";
+import { MCPResourceHandler } from "../mcp/MCPResourceHandler";
 
 export default class ToolsOpenAIConnector extends BaseConnector {
     private collectedAttachments: any[] = [];
@@ -30,10 +31,15 @@ export default class ToolsOpenAIConnector extends BaseConnector {
             }
         }
 
+        // Resolve any MCP resource attachments
+        const resolvedAttachments = this.collectedAttachments.length > 0 
+            ? await MCPResourceHandler.resolveResourceAttachments(this.collectedAttachments)
+            : [];
+
         return {
             resultMessage: {
                 ...response,
-                attachments: this.collectedAttachments,
+                attachments: resolvedAttachments,
                 audio_data_string: response.audio?.data ? `data:audio/${generationOptions["audio"]?.["format"]};base64,${response.audio.data}` : undefined
             }
         };

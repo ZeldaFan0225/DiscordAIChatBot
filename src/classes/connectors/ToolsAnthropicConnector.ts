@@ -1,5 +1,6 @@
 import BaseConnector, { ChatCompletionResult, ChatMessage, ChatMessageRoles, GenerationOptions, RequestOptions } from "./BaseConnector";
 import { AnthropicToolDefinition } from "../tools/BaseTool";
+import { MCPResourceHandler } from "../mcp/MCPResourceHandler";
 
 export default class ToolsAnthropicConnector extends BaseConnector {
     private collectedAttachments: any[] = [];
@@ -11,11 +12,16 @@ export default class ToolsAnthropicConnector extends BaseConnector {
         this.collectedAttachments = []; // Reset attachments for new request
         const response = await this.executeToolCall(await this.formatMessages(messages), systemInstruction, generationOptions, requestOptions);
 
+        // Resolve any MCP resource attachments
+        const resolvedAttachments = this.collectedAttachments.length > 0 
+            ? await MCPResourceHandler.resolveResourceAttachments(this.collectedAttachments)
+            : [];
+
         return {
             resultMessage: {
                 role: ChatMessageRoles.ASSISTANT,
                 content: response.content,
-                attachments: this.collectedAttachments
+                attachments: resolvedAttachments
             }
         };
     }

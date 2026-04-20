@@ -71,7 +71,8 @@
             "connectionOptions": {
                 "url": "https://api.openai.com/v1/chat/completions",
                 "apiKey": "OPENAI_KEY",
-                "tools": ["SearxingTool", "WolframTool"]
+                "tools": ["SearxingTool", "WolframTool"],
+                "mcpServers": ["filesystem", "memory"]
             }
         },
         "ToolsAnthropicConnector": {
@@ -79,7 +80,8 @@
             "connectionOptions": {
                 "url": "https://api.anthropic.com/v1/messages",
                 "apiKey": "ANTHROPIC_KEY",
-                "tools": ["SearxingTool", "WolframTool"]
+                "tools": ["SearxingTool", "WolframTool"],
+                "mcpServers": ["brave-search"]
             }
         }
     },
@@ -89,6 +91,26 @@
         },
         "WolframTool": {
             "class": "classes/tools/WolframTool"
+        }
+    },
+    "mcpServerConfigurations": {
+        "filesystem": {
+            "transportType": "stdio",
+            "command": "npx",
+            "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+        },
+        "brave-search": {
+            "transportType": "stdio",
+            "command": "npx",
+            "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+            "env": {
+                "BRAVE_API_KEY": "YOUR_BRAVE_API_KEY"
+            }
+        },
+        "memory": {
+            "transportType": "stdio",
+            "command": "npx",
+            "args": ["-y", "@modelcontextprotocol/server-memory"]
         }
     },
     "modelConfigurations": {
